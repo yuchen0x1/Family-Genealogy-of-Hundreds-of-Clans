@@ -61,3 +61,6 @@ yarn-error.log*
 
 # 自主升级任务的持久化过程记录（不入库）
 /.autonomous-upgrade/
+
+# 截图脚本生成物（含本机路径，不入库）
+/docs/images/readme/manifest.json
