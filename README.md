@@ -362,6 +362,14 @@ S3 兼容对象存储 · 外部 OCR · PostGIS 空间查询 · Meilisearch/OpenS
 
 如果这个项目对你有帮助，欢迎点一个 Star；修谱组织与姓氏文化研究者的问题请到 Discussions / Issues 交流。
 
+<a href="https://star-history.com/#yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans&type=Date" />
+   <img alt="Star History Chart（星标历史图）" src="https://api.star-history.com/svg?repos=yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans&type=Date" />
+ </picture>
+</a>
+
 <div align="center">
 
 中华姓氏，承载千年历史；

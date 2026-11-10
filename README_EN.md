@@ -161,6 +161,16 @@ Released under the [MIT License](LICENSE).
 - 🔧 PRs: fork → branch → ensure `pnpm typecheck && pnpm lint && pnpm test` passes → describe motivation and verification
 - 📜 Data discipline: historical claims require verifiable sources; nothing is generated without one
 
+## Star History
+
+<a href="https://star-history.com/#yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans&type=Date" />
+ </picture>
+</a>
+
 <div align="center">
 
 Chinese surnames carry a thousand years of history;
