@@ -20,49 +20,36 @@ import { cp, lstat, mkdir, readdir, readFile, realpath, rename, rm, writeFile } 
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import pg from "pg";
+import {
+  MANAGED_ARTIFACTS,
+  MANAGED_DIRS,
+  MANAGED_FILES,
+  isInsideStagingRoot,
+  isProtectedEntry,
+  parseArgs,
+  selectReplaceable,
+  skippedEntries,
+  validateArgs,
+} from "./update-apply-safety.mjs";
 
 const { Client } = pg;
 const ROOT = process.cwd();
 
-/** 受管目录：整体替换，使上游删除的文件不会残留在本地 */
-const MANAGED_DIRS = ["src", "prisma", "scripts", "public", "docs", "e2e", "docker", "nginx"];
-/** 受管顶层文件：仅更新应用构建与运行所需的项目文件 */
-const MANAGED_FILES = [
-  "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".npmrc",
-  "next.config.ts", "tsconfig.json", "postcss.config.mjs", "eslint.config.mjs", "playwright.config.ts",
-];
-const MANAGED_ARTIFACTS = ["node_modules", ".next"];
-const COMMIT_SHA_PATTERN = /^[a-f0-9]{40,64}$/i;
 const INSTALL_TIMEOUT_MS = 20 * 60 * 1000;
 const INSTALL_PROGRESS_FROM = 86;
 
-function parseArgs(argv) {
-  const out = {};
-  for (let i = 0; i < argv.length; i += 1) {
-    const key = argv[i];
-    if (!key.startsWith("--")) continue;
-    out[key.slice(2)] = argv[i + 1];
-    i += 1;
-  }
-  return out;
-}
-
 const args = parseArgs(process.argv.slice(2));
-const jobId = args.job;
-const staging = args.staging;
-const targetVersion = args.target;
-const targetCommit = args.commit;
-const parentPid = Number(args["parent-pid"] || 0);
-
-if (!jobId || !staging || !targetVersion || !targetCommit || !COMMIT_SHA_PATTERN.test(targetCommit)) {
-  console.error("[update-apply] 缺少必要参数或 commit SHA 无效：--job --staging --target --commit");
+const validated = validateArgs(args);
+if (!validated.ok) {
+  console.error(`[update-apply] 参数校验失败：${validated.error}`);
+  console.error("[update-apply] 用法：--job <uuid> --staging <dir> --target <ver> --commit <sha> [--parent-pid <pid>]");
   process.exit(2);
 }
+const { jobId, staging, targetVersion, targetCommit, parentPid } = validated.value;
 
 const stagingRoot = path.resolve(ROOT, ".storage", "update");
 const stagingPath = path.resolve(staging);
-const stagingRelative = path.relative(stagingRoot, stagingPath);
-if (!stagingRelative || stagingRelative === "." || stagingRelative.startsWith(`..${path.sep}`) || stagingRelative === ".." || path.isAbsolute(stagingRelative)) {
+if (!isInsideStagingRoot(stagingRoot, stagingPath)) {
   console.error("[update-apply] 暂存路径必须位于 .storage/update 子目录中");
   process.exit(2);
 }
@@ -200,19 +187,28 @@ async function replaceTree() {
   let applying = false;
   try {
     entries = await readdir(staging);
+    const replaceable = selectReplaceable(entries);
+    const skipped = skippedEntries(entries);
+    if (skipped.length > 0) {
+      // 上游带了白名单之外的文件（可能是 .env、备份或构建产物）：明确跳过并留痕
+      await note("warn", `跳过 ${skipped.length} 个不在替换白名单中的条目：${skipped.slice(0, 10).join(", ")}${skipped.length > 10 ? " …" : ""}`);
+    }
     for (const name of rollbackTargets) {
+      if (isProtectedEntry(name) && !MANAGED_ARTIFACTS.includes(name)) {
+        throw new Error(`内部错误：受保护条目 ${name} 出现在待替换列表中`);
+      }
       if (await preserveOriginalEntry(path.join(ROOT, name), prevDir)) backedUp.add(name);
     }
     backupComplete = true;
 
     applying = true;
-    for (const name of entries) {
-      if (!MANAGED_DIRS.includes(name) && !MANAGED_FILES.includes(name)) continue;
+    for (const name of replaceable) {
+      if (isProtectedEntry(name)) continue;
       const src = path.join(staging, name);
       const dest = path.join(ROOT, name);
       await copyTree(src, dest);
     }
-    await note("info", `已替换 ${entries.length} 个顶层条目`);
+    await note("info", `已替换 ${replaceable.length} 个顶层条目（上游共 ${entries.length} 个）`);
   } catch (err) {
     await note("error", `替换失败，开始回滚：${err.message}`);
     try {

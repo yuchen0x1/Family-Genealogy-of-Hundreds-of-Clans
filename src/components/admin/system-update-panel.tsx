@@ -64,6 +64,7 @@ export function SystemUpdatePanel() {
   const [confirmText, setConfirmText] = useState("");
   const [applying, setApplying] = useState(false);
   const [trackedJobId, setTrackedJobId] = useState<string | null>(null);
+  const [copiedLog, setCopiedLog] = useState(false);
 
   // 服务端仍有活跃任务时永远以它为准（可能是别的管理员刚发起的），
   // 否则优先展示本次会话刚发起、正在收尾的那个任务，最后退回最近一次任务。
@@ -93,6 +94,60 @@ export function SystemUpdatePanel() {
     const stage = (visibleJob?.stage ?? "QUEUED") as StageKey;
     return STAGE_ORDER.indexOf(stage);
   }, [visibleJob?.stage]);
+
+  /**
+   * 把任务日志整理成可粘贴给运维的纯文本。
+   * 带完整时间戳（不是页面上的时分秒），因为排障需要精确到日期与秒。
+   */
+  function formatLog(job: JobView): string {
+    const head = [
+      `任务 ${job.id}`,
+      `版本 ${job.fromVersion} → ${job.targetVersion}（驱动 ${job.driver}）`,
+      `状态 ${job.status} / ${job.stage} / ${job.progress}%`,
+      `创建 ${job.createdAt}${job.startedAt ? ` · 开始 ${job.startedAt}` : ""}${job.finishedAt ? ` · 结束 ${job.finishedAt}` : ""}`,
+      job.error ? `错误 ${job.error}` : "",
+      "",
+    ].filter(Boolean);
+    const lines = job.log.map((e) => `${e.at}\t${e.level.toUpperCase()}\t${e.text}`);
+    return [...head, ...lines].join("\n");
+  }
+
+  async function copyLog(job: JobView): Promise<void> {
+    const text = formatLog(job);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedLog(true);
+      window.setTimeout(() => setCopiedLog(false), 2000);
+    } catch {
+      // 剪贴板可能因非安全上下文或无权限而失败；退化到可选中的临时文本域
+      const area = document.createElement("textarea");
+      area.value = text;
+      area.setAttribute("readonly", "");
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(area);
+      setNotice(
+        ok
+          ? { kind: "success", title: "日志已复制" }
+          : { kind: "warning", title: "复制失败", lines: ["浏览器拒绝了剪贴板访问，请改用「导出」下载日志文件。"] },
+      );
+    }
+  }
+
+  function downloadLog(job: JobView): void {
+    const blob = new Blob([formatLog(job)], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    // 文件名带版本与任务短 ID，方便同时保留多次排障记录
+    link.href = url;
+    link.download = `update-${job.targetVersion}-${job.id.slice(0, 8)}.log.txt`;
+    link.click();
+    // 立即释放：下载已在 click 后开始，不释放会泄漏内存
+    URL.revokeObjectURL(url);
+  }
 
   async function check() {
     setChecking(true);
@@ -298,13 +353,34 @@ export function SystemUpdatePanel() {
                   <div className="text-[12px] text-ink-soft">{live.message ?? "—"}</div>
                   {live.error && <div className="rounded border border-cinnabar/30 bg-[#fdf3f1] p-2 text-[11px] leading-5 text-ink">{live.error}</div>}
                   {live.log.length > 0 && (
-                    <div className="max-h-40 overflow-y-auto rounded border border-line bg-cream/40 p-2 font-mono text-[10px] leading-5 text-graphite">
-                      {live.log.map((entry, i) => (
-                        <div key={`${entry.at}-${i}`} className={entry.level === "error" ? "text-cinnabar" : entry.level === "warn" ? "text-gold" : ""}>
-                          <span className="opacity-60">{new Date(entry.at).toLocaleTimeString("zh-CN", { hour12: false })}</span> {entry.text}
+                    <>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-semibold tracking-wide text-graphite">执行日志（{live.log.length} 条）</span>
+                        <div className="flex gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => void copyLog(live)}
+                            className="rounded border border-line bg-white px-2 py-0.5 text-[10px] text-ink transition-colors hover:bg-cream-dark focus:outline-none focus:ring-2 focus:ring-gold/40"
+                          >
+                            {copiedLog ? "已复制" : "复制"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => downloadLog(live)}
+                            className="rounded border border-line bg-white px-2 py-0.5 text-[10px] text-ink transition-colors hover:bg-cream-dark focus:outline-none focus:ring-2 focus:ring-gold/40"
+                          >
+                            导出
+                          </button>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                      <div className="max-h-40 overflow-y-auto rounded border border-line bg-cream/40 p-2 font-mono text-[10px] leading-5 text-graphite">
+                        {live.log.map((entry, i) => (
+                          <div key={`${entry.at}-${i}`} className={entry.level === "error" ? "text-cinnabar" : entry.level === "warn" ? "text-gold" : ""}>
+                            <span className="opacity-60">{new Date(entry.at).toLocaleTimeString("zh-CN", { hour12: false })}</span> {entry.text}
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   )}
                 </>
               );
