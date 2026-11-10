@@ -79,29 +79,46 @@ push / PR 时 GitHub Actions（`.github/workflows/ci.yml`）自动执行 lint、
 ## 目录结构
 
 ```
-prisma/                 schema.prisma（47 models）、4 个迁移、seed 史料与演示数据
-src/app/api/            63 个 Route Handlers
+prisma/                 schema.prisma（48 models）、5 个迁移、seed 史料与演示数据
+src/app/api/            66 个 Route Handlers
 src/app/                20 个页面（App Router）
 src/components/         图谱、档案、社区、后台、族谱工作区等组件
-src/lib/                认证、权限、加密、缓存、搜索、亲属称谓、图谱布局、导入导出、存储
+src/lib/                认证、权限、加密、缓存、搜索、亲属称谓、图谱布局、导入导出、存储、更新器
+src/lib/updater/        在线更新：版本检测、发布包校验、任务生命周期、驱动（SOURCE/DOCKER/SIMULATE）
 src/tests/              Vitest 单元测试
 e2e/                    Playwright 桌面 / 移动端用例
-scripts/                本地 PG、备份、冒烟、安全审计、性能检查、限流重置
-.github/workflows/      GitHub Actions CI（lint/typecheck/单测 + 构建与冒烟）
+scripts/                本地 PG、备份、冒烟、安全审计、性能检查、限流重置、发布与更新安装脚本
+docker/                 updater sidecar（唯一持有 docker.sock 的组件）
+deploy/systemd/         SOURCE 驱动部署用的 systemd unit
+.github/workflows/      GitHub Actions CI（lint/typecheck/单测 + 构建与冒烟 + tag 自动发布）
 public/geo/             合规本地行政区划 GeoJSON（含台湾省、香港/澳门特别行政区）
 reports/                机器生成的测试 / 安全 / 性能报告
 docs/                   API、部署、测试报告、安全审计、用户说明、完成清单
 nginx/ docker/          Nginx 配置、自签证书生成脚本、数据库初始化 SQL
 ```
 
+## 在线更新（自托管运维）
+
+后台「系统设置 → 系统更新」可以从上游仓库检查并安装新版本，全程落库、可审计、可中断恢复。
+
+- **目标版本由服务端决定**：前端只能点「立即更新」，不能指定版本；上游地址只来自环境变量（排除 SSRF）。
+- **三种驱动**：`SOURCE`（源码部署，安装构建后由 systemd/pm2 拉起）、`DOCKER`（容器部署，写重启标记由 sidecar 重建镜像）、`SIMULATE`（演示，不修改文件，生产默认禁用）。
+- **强制备份**：更新前自动备份数据库与上传文件，备份失败即中止。
+- **发布包校验**：流式检查 tar.gz 的路径穿越、链接/设备文件、校验和、体积与条目上限，并比对包内 `package.json` 版本与目标版本。
+- **任务互斥与自愈**：数据库唯一索引保证同一时刻只有一个活跃任务；进程被重启打断的任务在下次读取状态时自动收尾。
+- **发布流程**：`pnpm release patch|minor|major` 更新版本号与 CHANGELOG 并打 tag；推送 tag 后 CI 自动创建 GitHub Release（正文取 CHANGELOG 对应段落）。
+
+配置项见 `.env.example`，Docker sidecar 与 systemd 两种部署形态的完整步骤见 `docs/DEPLOYMENT.md` 第 10、11 节。
+
 ## 文档索引
 
 - `docs/API.md` — 全部 API、权限与错误码
-- `docs/DEPLOYMENT.md` — 部署、HTTPS、备份恢复、升级与排障
+- `docs/DEPLOYMENT.md` — 部署、HTTPS、备份恢复、升级、在线更新驱动与排障
 - `docs/TEST_REPORT.md` — 测试结果与实测数字
 - `docs/SECURITY_AUDIT.md` — 安全设计、审计结果与遗留依赖
 - `docs/USER_GUIDE.md` — 用户操作说明
 - `docs/COMPLETION.md` — 已完成 / 未完成清单与外部依赖状态
+- `CHANGELOG.md` — 版本变更记录
 
 ## 外部依赖状态（不伪造成功）
 

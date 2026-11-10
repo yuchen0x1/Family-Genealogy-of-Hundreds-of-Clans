@@ -49,8 +49,11 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:?请在 .env 中设置随机 SESSION_SECRET}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?请在 .env 中设置 32 字节 hex ENCRYPTION_KEY}
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-20}
+      APP_UPDATE_DRIVER: ${APP_UPDATE_DRIVER:-DOCKER}
+      APP_UPDATE_REPO: ${APP_UPDATE_REPO:-}
     volumes:
       - uploads:/app/.storage/uploads
+      - update_state:/app/.storage/update
       - ./backups:/app/backups
     depends_on:
       postgres:
@@ -62,6 +65,27 @@ services:
       interval: 30s
       timeout: 5s
       start_period: 60s
+      retries: 3
+
+  # 仅 updater 持有 Docker socket；app/nginx 永远不挂载该 socket。
+  updater:
+    image: docker:27.5.1-cli
+    restart: unless-stopped
+    environment:
+      APP_UPDATE_PROJECT_DIR: ${APP_UPDATE_PROJECT_DIR:?请在 .env 中设置宿主机项目绝对路径（如 /srv/xungen）}
+      APP_UPDATE_POLL_SECONDS: ${APP_UPDATE_POLL_SECONDS:-15}
+      APP_UPDATE_UPDATE_DIR: /app/.storage/update
+    volumes:
+      # 宿主机目录仅提供 .env 与 Compose 项目配置；新版源码从 update_state 共享卷构建。
+      - ${APP_UPDATE_PROJECT_DIR:?请在 .env 中设置宿主机项目绝对路径（如 /srv/xungen）}:${APP_UPDATE_PROJECT_DIR:?请在 .env 中设置宿主机项目绝对路径（如 /srv/xungen）}:ro
+      - update_state:/app/.storage/update
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker/update-sidecar.sh:/usr/local/bin/update-sidecar.sh:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/update-sidecar.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /usr/local/bin/update-sidecar.sh"]
+      interval: 30s
+      timeout: 5s
       retries: 3
 
   nginx:
@@ -81,3 +105,4 @@ volumes:
   pgdata:
   redisdata:
   uploads:
+  update_state:

@@ -17,7 +17,13 @@ RUN pnpm install --frozen-lockfile
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ENV NEXT_TELEMETRY_DISABLED=1
+ARG APP_VERSION
+ARG APP_BUILD_SHA
+ARG APP_BUILD_TIME
+ENV NEXT_TELEMETRY_DISABLED=1 \
+    APP_VERSION=$APP_VERSION \
+    APP_BUILD_SHA=$APP_BUILD_SHA \
+    APP_BUILD_TIME=$APP_BUILD_TIME
 RUN pnpm exec prisma generate && pnpm build
 
 FROM base AS runner
@@ -29,7 +35,7 @@ ENV NODE_ENV=production \
     BACKUP_DIR=/app/backups
 RUN groupadd -g 1001 nodejs \
  && useradd -u 1001 -g nodejs -m nextjs \
- && mkdir -p /app/.storage/uploads /app/backups \
+ && mkdir -p /app/.storage/uploads /app/.storage/update /app/backups \
  && chown -R nextjs:nodejs /app
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next

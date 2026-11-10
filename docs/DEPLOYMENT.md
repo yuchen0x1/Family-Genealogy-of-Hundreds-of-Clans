@@ -158,3 +158,56 @@ node scripts/backup.mjs --restore-files <dump> --i-understand  # pg_restore cust
 - [ ] `UPLOAD_DIR` 对应的 Docker Volume 或对象存储已纳入备份策略
 - [ ] 隐私政策、用户协议、授权撤回与账号注销入口可达（`/legal/privacy`、`/legal/terms`、`/me`）
 - [ ] 首次在目标服务器完成一次 `docker compose up -d --build` 全链路验证（本机因环境策略未执行）
+
+## 10. 更新驱动与 updater sidecar（Docker）
+
+Docker 部署必须将 `APP_UPDATE_DRIVER=DOCKER`。Web `app` 容器把经过校验的发布包解压到 `/app/.storage/update/staging-<version>`，并写入 `.storage/update/docker-restart.requested` 标记；`app` 与 `updater` 通过同一个 `update_state` 命名卷共享此目录。**app/nginx 绝不挂载 `/var/run/docker.sock`**；只有 `updater` sidecar 挂载该 socket。sidecar 校验普通请求文件、任务 ID、staging 名称和必要文件后，将 Compose build context 指向共享卷中的 staging 源码，再固定执行 `docker compose build app` 与 `docker compose up -d --no-build app nginx`。它不会执行请求内容中的命令或参数，也不会使用宿主机旧 checkout 作为 app 的构建上下文。
+
+`.env` 至少配置：
+
+```dotenv
+APP_UPDATE_DRIVER=DOCKER
+APP_UPDATE_REPO=owner/repository
+APP_UPDATE_PROJECT_DIR=/srv/xungen       # 宿主机项目绝对路径，必须与 compose 文件所在目录一致
+APP_UPDATE_POLL_SECONDS=15
+```
+
+首次部署时，`APP_UPDATE_PROJECT_DIR` 必须是宿主机绝对路径，且与 `docker-compose.yml` 和 `.env` 所在目录一致；sidecar 以只读方式访问该目录的 Compose 配置与 `.env`，更新 staging 和状态通过 app/updater 共用的 `update_state` 命名卷共享。app 以 UID 1001 写共享卷，updater 镜像以 root 写该卷；首次部署应让 app 镜像初始化卷目录权限（Compose 挂载前创建目录并 chown 为 1001），并验证两容器均可访问；不要把宿主机项目目录改成可写挂载。检查权限与启动状态：
+
+```bash
+chmod 0750 docker/update-sidecar.sh
+# 仅 updater 应显示 Docker socket 挂载；app/nginx 不得出现 docker.sock
+DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker} docker compose config
+docker compose up -d --build
+docker compose ps updater
+docker compose logs -f updater
+```
+
+sidecar 失败请求会移到 `docker-restart.failed`，并在共享卷写入 `docker-restart.last` 的失败结果；应用读取更新状态时会按 `jobId` 立即将对应任务标为失败并释放更新锁，不必等待超时。sidecar 不自动重试；处理前请查看日志、备份并人工确认构建环境。`docker-restart.last` 的 `SUCCEEDED` 仅表示 Compose build/up 命令成功返回，不代表新 app 已健康或目标版本已生效；运维仍须检查 `docker compose ps`、`docker compose logs app` 和 `/api/health`，并确认后台显示的当前版本。应用端只应将匹配的 `jobId` 结果作用于对应的活动 DOCKER 任务；成功需再核对当前运行版本/构建 SHA 与目标版本，不匹配时保持等待并由超时策略收尾。Sidecar 使用部署目录中的 Compose 配置和 `.env`，发布包仅作为 app/Dockerfile 的 build context；Compose 服务定义、Nginx 配置和宿主证书不会随该在线更新覆盖，变更这些部署文件时仍需按人工升级流程应用。Docker socket 等价于宿主机高权限，必须限制服务器登录、保护 `.env`（含数据库密钥和仓库令牌），不要把 updater 端口暴露到公网。
+
+## 11. 源码部署与 systemd
+
+源码部署使用 `APP_UPDATE_DRIVER=SOURCE`，不需要 Docker socket。**安全取舍：**源码更新器作为 Web 服务的同一 UID 执行，须能写受管源码、`node_modules` 和 `.next`；因此被攻陷的 Web 进程也可修改这些路径，不能视为最小权限或强隔离部署。若优先隔离，应使用 Docker staging 更新，或由运维人工部署更新，而不是启用 SOURCE 自动更新。若仍使用 SOURCE，必须把生产密钥放到工作树外（例如 `/etc/xungen/xungen.env`，root 所有、服务账号只读），不要在工作树保存可写 `.env`；工作树由专用 `xungen` 用户拥有，不授予 sudo 或 Docker socket。将 `deploy/systemd/xungen.service` 安装到 `/etc/systemd/system/`，按实际路径调整 `WorkingDirectory`、`EnvironmentFile` 和 `ExecStart`：
+
+```bash
+sudo install -d -o root -g root -m 0755 /etc/xungen
+sudo mv /srv/xungen/.env /etc/xungen/xungen.env
+sudo chown root:root /etc/xungen/xungen.env
+sudo chmod 0640 /etc/xungen/xungen.env
+# /srv/xungen 工作树（不含 .env）归专用 xungen 用户所有，更新器需要替换受管源码和构建产物。
+sudo chown -R xungen:xungen /srv/xungen
+sudo install -o root -g root -m 0644 deploy/systemd/xungen.service /etc/systemd/system/xungen.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now xungen.service
+sudo systemctl status xungen.service
+```
+
+`.env` 的关键配置：
+
+```dotenv
+APP_UPDATE_DRIVER=SOURCE
+APP_UPDATE_REPO=owner/repository
+# 此 unit 使用 Restart=always；更新器结束旧进程后由 systemd 自动拉起，无需 systemctl 提权命令。
+```
+
+该 unit 用 `Restart=always`：更新器在安装、构建完成后结束旧 Node 进程，systemd 自动拉起新版本，避免授予服务账号 `systemctl restart` 权限。`ProtectSystem=strict` 配合 `ReadWritePaths=/srv/xungen` 允许 updater 在工作树内替换源码、写 `node_modules`/`.next` 与用户数据；因此必须把 `.env` 移出该目录并将其配置为 root 所有、服务账号只读的 `EnvironmentFile`（如 `/etc/xungen/xungen.env`）。如项目路径或 Node/pnpm 路径不同，应在部署前调整并用 `systemd-analyze verify /etc/systemd/system/xungen.service` 校验。

@@ -23,6 +23,8 @@
 | 备份 / 恢复演练 | `pnpm db:backup` + 影子库恢复 | 47 张表 / 1017 行 | 恢复行数与快照一致 |
 | 性能基线 | `pnpm test:perf` | 11 端点 ×3 + 60 并发 + 5 种导出 | 0 异常 |
 
+> 上表的 85 项单测为 2026-11-09 轮的记录。2026-11-10 的在线更新功能将单测扩到 **136 项 / 14 文件**（新增 5 个 updater 测试文件、51 项），其中 4 项是本轮修复缺陷后新增的回归断言，详见第 2.1 节。
+
 ## 2. 单元测试（Vitest，85 项）
 
 | 文件 | 项数 | 覆盖 |
@@ -35,6 +37,22 @@
 | `src/tests/permissions.test.ts` | 6 | `canViewPersonDetails` 可见矩阵：协作者全见、私有族谱全拒、在世非 PUBLIC 不给详情、已故 PRIVATE 不泄漏 |
 | `src/tests/audit-sanitize.test.ts` | 6 | 审计载荷脱敏：敏感字段替换、超长截断、嵌套递归、深度上限 |
 | `src/tests/search-term.test.ts` | 6 | 查询词规范化：中文/拼音不受影响、脚本标签剥离、控制字符、长度截断 |
+
+### 2.1 在线更新模块（51 项，本轮新增）
+
+| 文件 | 项数 | 覆盖 |
+| --- | ---: | --- |
+| `src/tests/updater-version.test.ts` | 5 | 版本归一化、语义化比较（含预发布序）、严格格式校验、本地版本读取优先级 |
+| `src/tests/updater-github.test.ts` | 7 | Release/tag/branch 三通道解析、超长日志截断、404 回退、短 SHA 拒绝、token 透传、限流与鉴权错误区分、缓存命中与 force |
+| `src/tests/updater-archive.test.ts` | 14 | tar.gz 流式检查：路径穿越、绝对路径、链接/设备文件、校验和、体积与条目上限、多顶层目录、结束标记 |
+| `src/tests/updater-jobs.test.ts` | 12 | 同版本拒绝、并发唯一约束转 409、进度与消息截断、sidecar 失败/成功/processing 三态、重复轮询不重复写库、等待确认超时、安装期长静默不误杀、branch 短 SHA 收尾、日志条目清洗 |
+| `src/tests/updater-api.test.ts` | 4 | 管理权限、`confirm: "UPDATE"` 字面量、同源 + 限流 + 审计顺序、CSRF/限流错误结构化 |
+
+本轮修复缺陷后新增的 4 项回归断言（都在 `updater-jobs.test.ts`）：
+1. `已在等待确认的 Docker 任务重复轮询时不重复写库与追加日志` —— 修复轮询期无谓写库与日志膨胀
+2. `sidecar 报告成功但新容器长期不生效时判失败并释放锁` —— 修复更新锁永久占用
+3. `安装阶段长时间无进度不因 10 分钟静默被误判失败` —— 修复 stale 阈值短于构建超时
+4. `branch 通道的 12 位 SHA 前缀在重启后被识别为版本已生效` —— 修复 branch 通道永远无法判成功
 
 ## 3. HTTP 冒烟测试（305 项）
 

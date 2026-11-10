@@ -44,7 +44,7 @@ async function main() {
   console.log("1) 页面与越权拦截");
   const page = await request("GET", "/admin", { as: "anon", raw: true });
   check("后台页面返回 200（客户端再做权限判定）", page.status === 200, `实际 ${page.status}`);
-  const adminEndpoints = ["/api/admin/overview", "/api/admin/users", "/api/admin/reports", "/api/admin/posts", "/api/admin/sources", "/api/admin/surnames", "/api/admin/audit-logs", "/api/admin/settings"];
+  const adminEndpoints = ["/api/admin/overview", "/api/admin/users", "/api/admin/reports", "/api/admin/posts", "/api/admin/sources", "/api/admin/surnames", "/api/admin/audit-logs", "/api/admin/settings", "/api/admin/system/update"];
   for (const p of adminEndpoints) {
     const r = await request("GET", p, { as: "anon" });
     check(`匿名访问 ${p} 被拒`, r.status === 401, `实际 ${r.status}`);
@@ -181,6 +181,38 @@ async function main() {
   check("白名单设置项可修改", r.status === 200, JSON.stringify(r.body));
   r = await request("PATCH", "/api/admin/settings", { json: { key: "site.name", value: siteNameBefore }, as: "admin" });
   check("设置值已恢复原值", r.status === 200, JSON.stringify(r.body));
+
+  console.log("8) 系统更新");
+  r = await request("GET", "/api/admin/system/update", { as: "admin" });
+  const updateState = r.data;
+  check(
+    "更新状态返回当前版本与实例配对",
+    r.status === 200 && typeof updateState?.current?.version === "string" && typeof updateState?.pairing?.instanceId === "string",
+    JSON.stringify(updateState)?.slice(0, 240),
+  );
+  check(
+    "更新状态声明驱动与备份策略",
+    ["SOURCE", "DOCKER", "SIMULATE"].includes(updateState?.pairing?.driver) && typeof updateState?.backupRequired === "boolean",
+    JSON.stringify({ driver: updateState?.pairing?.driver, backupRequired: updateState?.backupRequired }),
+  );
+  // 上游检查可能因 CI 无外网而失败；此时必须仍然 200 并带 upstreamError，而不是整页报错
+  check(
+    "上游不可达时仍返回 200 并附带错误说明",
+    r.status === 200 && (updateState?.upstream !== null || updateState?.upstreamError !== null),
+    JSON.stringify({ upstream: updateState?.upstream, upstreamError: updateState?.upstreamError }).slice(0, 240),
+  );
+  // 版本字段必须是非空字符串，前端直接按字符串渲染
+  check("当前版本为非空字符串", (updateState?.current?.version ?? "").length > 0, String(updateState?.current?.version));
+  r = await request("POST", "/api/admin/system/update", { json: {}, as: "admin" });
+  check("缺少 confirm 字面量时拒绝发起更新", r.status === 422, `实际 ${r.status}`);
+  r = await request("POST", "/api/admin/system/update", { json: { confirm: "update" }, as: "admin" });
+  check("confirm 字面量大小写不符时拒绝", r.status === 422, `实际 ${r.status}`);
+  r = await request("POST", "/api/admin/system/update/check", { json: {}, as: "admin" });
+  check(
+    "强制检查更新返回结构化结果（成功或明确的上游错误）",
+    r.status === 200 && (r.data?.upstream != null || r.data?.upstreamError != null),
+    JSON.stringify(r.body).slice(0, 240),
+  );
 
   console.log(`\n[smoke-admin] 通过 ${passed} 项，失败 ${failed} 项\n`);
   if (failed) process.exit(1);

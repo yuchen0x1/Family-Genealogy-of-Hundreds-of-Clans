@@ -169,8 +169,20 @@
 | GET,PATCH | `/admin/surnames` | 审核员 | 姓氏资料审核状态 |
 | GET | `/admin/audit-logs` | 管理员 | 审计日志（写入含 before/after 与 IP 摘要） |
 | GET,PATCH | `/admin/settings` | 管理员 | 系统设置白名单；安全基线只读 |
+| GET | `/admin/system/update` | 管理员 | 更新状态：当前版本、上游版本、实例配对、活跃/最近任务 |
+| POST | `/admin/system/update/check` | 管理员 | 跳过 5 分钟缓存强制检查上游（10 次/分钟，避免耗尽 GitHub 匿名配额） |
+| POST | `/admin/system/update` | 管理员 | 发起更新，需 `confirm: "UPDATE"`（5 次/10 分钟，返回 202 + 任务快照） |
+| GET | `/admin/system/update/jobs/[jobId]` | 管理员 | 轮询单任务进度（前端约 1.5 秒一次；读取时顺带收尾被重启打断的任务） |
 
 以上后台接口均只处理元数据与状态；管理员账号同样受家族级权限约束，无法通过后台读取私有族谱人物、图谱或导出内容（已由 `smoke-admin.mjs` 验证）。
+
+#### 系统更新的接口约束
+
+- **目标版本由服务端决定**：`POST /admin/system/update` 不接受任何版本参数，目标版本取自当前上游检查结果，避免前端指定任意 tag 把实例降级或指向不存在的 ref。
+- **上游地址只来自环境变量**（`APP_UPDATE_REPO`，且校验 `owner/repo` 格式），绝不接受请求参数，从根上排除 SSRF。
+- **并发互斥**：`update_jobs.active_lock` 唯一索引保证同一时刻只有一个活跃任务，第二个请求得到 `409 UPDATE_IN_PROGRESS`。
+- **上游不可达不报 500**：`GET /admin/system/update` 始终返回 200，当前版本与配对信息照常展示，上游失败只作为 `upstreamError` 附带说明——否则一次网络抖动就会让整个后台页面白屏。
+- **常见错误码**：`UPSTREAM_UNAVAILABLE`(502)、`CANNOT_DETERMINE_VERSION`(409)、`ALREADY_UP_TO_DATE`(409)、`SIMULATE_FORBIDDEN`(403)、`UPDATE_IN_PROGRESS`(409)、`INVALID_JOB_ID`(400)、`JOB_NOT_FOUND`(404)。备份、下载与校验阶段的失败（`BACKUP_FAILED`、`DOWNLOAD_*`、`INVALID_ARCHIVE`、`VERSION_MISMATCH`）记录在任务对象上，不改变已返回的 HTTP 状态。
 
 ## 4. 调用示例
 

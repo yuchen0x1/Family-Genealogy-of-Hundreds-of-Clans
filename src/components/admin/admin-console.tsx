@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge, Card, CardBody, CardHeader, Input, Select, Textarea, EmptyState, ErrorState } from "@/components/ui/primitives";
 import { Field, Modal, Notice, Pager, formatDate, parseError, type NoticeData } from "@/components/family/shared";
 import { fetcher, apiRequest, type MeResponse } from "@/lib/client";
+import { SystemUpdatePanel } from "@/components/admin/system-update-panel";
 
 type Tab = "overview" | "users" | "moderation" | "sources" | "audit" | "settings";
 const ALL_TABS: Array<{ key: Tab; label: string; icon: typeof LayoutDashboard; adminOnly?: boolean }> = [
@@ -468,6 +469,8 @@ function SettingsPanel() {
   return (
     <div className="space-y-4">
       {notice && <Notice data={notice} onClose={() => setNotice(null)} />}
+      {/* 系统更新放在设置页首位：版本状态是运维最需要一眼看到的信息 */}
+      <SystemUpdatePanel />
       {!data ? <Loading /> : <>
         <Card className="border-gold/40 bg-[#fbf7ee]"><CardBody className="text-[11px] leading-6 text-graphite">{data.notice}</CardBody></Card>
         <Card><CardBody className="space-y-2">

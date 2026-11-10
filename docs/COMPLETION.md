@@ -78,6 +78,7 @@
 | CSP nonce/hash 加固 | 开发配置仍含 `script-src 'unsafe-inline' 'unsafe-eval'` 以兼容 Next.js/ECharts | 生产改用 nonce/hash 并复测图谱与导出 |
 | 依赖组件 CVE 扫描、容器镜像基线扫描 | 未执行 | `npm audit` / SCA 与镜像扫描流水线 |
 | Safari / Firefox / 真机移动端、系统性 a11y、国际化 | 未覆盖；E2E 仅 Chromium（含移动模拟） | 多浏览器与真机测试、无障碍审计、i18n |
+| 在线更新的真实端到端演练 | 状态机、任务互斥、SIMULATE 全流程、UI 均已实测；**SOURCE 的「安装+构建+重启」与 DOCKER 的 sidecar 重建镜像未在本机跑过**（本机为 Windows 开发机，无 systemd，Docker 引擎被环境策略阻断） | 在目标服务器上执行一次真实升级（建议先预发环境）：`APP_UPDATE_DRIVER=SOURCE` 走 systemd 拉起，或 `APP_UPDATE_DRIVER=DOCKER` 走 sidecar，按 `DEPLOYMENT.md` 第 10、11 节验收 |
 
 ## 5. 已知限制（设计取舍，非缺陷）
 

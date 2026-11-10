@@ -57,3 +57,6 @@ yarn-error.log*
 
 # 工具链产生的 0 字节临时文件（prisma generate / pnpm 供应链检查残留）
 /_tmp_*
+
+# 自主升级任务的持久化过程记录（不入库）
+/.autonomous-upgrade/

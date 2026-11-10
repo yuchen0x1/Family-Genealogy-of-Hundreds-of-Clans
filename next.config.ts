@@ -16,9 +16,21 @@ const securityHeaders = [
   },
 ];
 
+const buildVersion =
+  process.env.APP_VERSION ||
+  (process.env.GITHUB_REF_TYPE === "tag" ? process.env.GITHUB_REF_NAME?.replace(/^v/i, "") : undefined);
+const buildSha = process.env.APP_BUILD_SHA || process.env.GITHUB_SHA;
+const buildTime = process.env.APP_BUILD_TIME || new Date().toISOString();
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // 版本信息不是密钥，注入构建产物后可在无 .git 的部署环境中展示准确版本。
+  env: {
+    ...(buildVersion ? { APP_VERSION: buildVersion } : {}),
+    ...(buildSha ? { APP_BUILD_SHA: buildSha } : {}),
+    APP_BUILD_TIME: buildTime,
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

@@ -269,6 +269,7 @@ model User {
   citationsCreated    SourceCitation[]       @relation("CitationCreator")
   connectionRequests  ClanConnection[]       @relation("ConnectionRequester")
   connectionReceived  ClanConnection[]       @relation("ConnectionAddressee")
+  updateJobs          UpdateJob[]            @relation("UpdateRequester")
 
   @@index([status, createdAt])
   @@map("users")
@@ -1295,4 +1296,75 @@ model ExportJob {
 
   @@index([familyId, createdAt])
   @@map("export_jobs")
+}
+
+// ============================================================
+// 系统更新（自托管实例从上游仓库升级）
+
+/// 更新任务状态。RUNNING 是唯一的「进行中」态，进程重启后由启动自愈逻辑收尾，
+/// 避免任务永久悬挂在 RUNNING 让后台无法再次发起更新。
+enum UpdateStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+/// 更新阶段。前端进度条按阶段映射文案，故用封闭枚举而非自由字符串。
+enum UpdateStage {
+  QUEUED
+  BACKUP
+  DOWNLOAD
+  VERIFY
+  INSTALL
+  RESTART
+  DONE
+}
+
+/// 更新驱动：
+/// - SOURCE   源码部署，在宿主机执行拉取 + 安装 + 构建，由外部进程管理器拉起
+/// - DOCKER   容器部署，写重启标记，由 sidecar（唯一持有 docker.sock 的组件）重建
+/// - SIMULATE 仅开发/演示用，不改变任何文件；生产环境默认禁用
+enum UpdateDriver {
+  SOURCE
+  DOCKER
+  SIMULATE
+}
+
+/// 一次更新尝试的完整记录。进度落库而非只存内存，
+/// 因为「下载完成后重启」会让原进程消失，新进程必须能读到上一次的结果。
+model UpdateJob {
+  id            String       @id @default(uuid()) @db.Uuid
+  /// 发起更新的实例标识，用于区分同一上游的不同部署
+  instanceId    String       @map("instance_id") @db.VarChar(64)
+  fromVersion   String       @map("from_version") @db.VarChar(40)
+  targetVersion String       @map("target_version") @db.VarChar(40)
+  driver        UpdateDriver
+  status        UpdateStatus @default(QUEUED)
+  stage         UpdateStage  @default(QUEUED)
+  /// 0-100，前端进度条直接消费
+  progress      Int          @default(0)
+  /// 当前阶段的一句话说明，给用户看
+  message       String?      @db.VarChar(500)
+  /// 阶段日志，形如 [{ at, level, text }]，服务端限制条数防膨胀
+  log           Json         @default("[]")
+  error         String?      @db.Text
+  /// 已下载的发布包路径（供 INSTALL 阶段使用，DONE/FAILED 后清理）
+  artifactPath  String?      @map("artifact_path") @db.VarChar(500)
+  requestedById String?      @map("requested_by_id") @db.Uuid
+  /// 全局互斥锁：进行中的任务写入固定值，结束时置空。
+  /// 唯一索引保证同一实例同一时刻最多一个活跃任务（防止并发更新互相覆盖构建产物）。
+  activeLock    String?      @unique @map("active_lock") @db.VarChar(16)
+  startedAt     DateTime?    @map("started_at")
+  finishedAt    DateTime?    @map("finished_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  requestedBy   User?        @relation("UpdateRequester", fields: [requestedById], references: [id], onDelete: SetNull)
+
+  /// 同一时刻只允许一个进行中任务，靠 (status) 的部分索引 + 应用层加锁双保险
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@map("update_jobs")
 }
