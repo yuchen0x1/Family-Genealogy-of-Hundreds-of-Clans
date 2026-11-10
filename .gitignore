@@ -54,3 +54,6 @@ yarn-error.log*
 
 # 本地 AI 助手工作记忆（不入库）
 /.workbuddy/
+
+# 工具链产生的 0 字节临时文件（prisma generate / pnpm 供应链检查残留）
+/_tmp_*
