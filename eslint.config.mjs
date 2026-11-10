@@ -1,14 +1,12 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({ baseDirectory: __dirname });
+// Next.js 16 起，eslint-config-next 直接导出 flat config 数组，
+// 不再提供 legacy 的 `next/core-web-vitals` 这类可被 FlatCompat 解析的 extends 名。
+// 继续用 FlatCompat 会因配置对象存在循环引用而抛 "Converting circular structure to JSON"。
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
+import nextTypescript from "eslint-config-next/typescript";
 
 const config = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  ...nextCoreWebVitals,
+  ...nextTypescript,
   {
     ignores: [
       // Next.js 构建产物。`.next.old-*` 是启动前重命名保存的历史构建缓存，
