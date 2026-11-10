@@ -10,11 +10,11 @@ jobs:
     name: Lint / Typecheck / Unit Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      # 不指定 version：由 package.json 的 packageManager 字段（pnpm@11.20.0）决定，
+      # 同时指定两者会被 pnpm/action-setup 判定为版本冲突直接失败。
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -47,11 +47,9 @@ jobs:
       # 无 Redis：自动降级为进程内缓存（被测行为之一）
       REDIS_URL: ""
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
