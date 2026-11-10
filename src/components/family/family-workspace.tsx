@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import useSWR, { useSWRConfig } from "swr";
-import { ArrowLeft, Users, GitBranch, FileText, Lock, Globe, ShieldCheck, BookOpen, Network, ListTree, History, UserCog, Settings2, FolderArchive, ArrowLeftRight, BarChart3 } from "lucide-react";
+import { ArrowLeft, Users, GitBranch, FileText, Lock, Globe, ShieldCheck, BookOpen, Network, ListTree, History, UserCog, Settings2, FolderArchive, ArrowLeftRight, BarChart3, CopyCheck } from "lucide-react";
 import { fetcher } from "@/lib/client";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, CardBody, EmptyState } from "@/components/ui/primitives";
@@ -18,10 +18,12 @@ import { SettingsPanel, type FamilyDetail } from "@/components/family/settings-p
 import { ArchivePanel } from "@/components/family/archive-panel";
 import { ImportExportPanel } from "@/components/family/import-export-panel";
 import { FamilyStatsPanel } from "@/components/family/family-stats-panel";
+import { DuplicatePanel } from "@/components/family/duplicate-panel";
 
 const TABS = [
   { key: "graph", label: "关系图谱", icon: Network },
   { key: "stats", label: "家族统计", icon: BarChart3 },
+  { key: "duplicates", label: "重复核对", icon: CopyCheck },
   { key: "people", label: "人物管理", icon: Users },
   { key: "relations", label: "关系管理", icon: ListTree },
   { key: "generations", label: "字辈与分支", icon: BookOpen },
@@ -33,11 +35,42 @@ const TABS = [
 ] as const;
 type TabKey = (typeof TABS)[number]["key"];
 
+const TAB_KEYS = new Set<string>(TABS.map((t) => t.key));
+
+/** 从 URL hash 读取初始标签页；非法值一律回退到关系图谱，不因坏链接白屏。 */
+function readTabFromHash(): TabKey {
+  if (typeof window === "undefined") return "graph";
+  const match = /(?:^#|&)tab=([a-z]+)/.exec(window.location.hash);
+  const candidate = match?.[1];
+  return candidate && TAB_KEYS.has(candidate) ? (candidate as TabKey) : "graph";
+}
+
 export function FamilyWorkspace({ familyId }: { familyId: string }) {
-  const [tab, setTab] = useState<TabKey>("graph");
+  const [tab, setTabState] = useState<TabKey>(() => readTabFromHash());
   const detailUrl = `/api/families/${familyId}`;
   const { data: family, error, isLoading, mutate } = useSWR<FamilyDetail>(detailUrl, fetcher);
   const { mutate: mutateAll } = useSWRConfig();
+
+  /**
+   * 标签页与 URL hash 双向同步（`#tab=people`）。
+   *
+   * 这样从「疑似重复人物」等面板可以深链到指定标签页，刷新后也停在原处；
+   * 用 hash 而不是 query，避免为纯客户端状态触发服务端重渲染或需要 Suspense。
+   */
+  function setTab(next: TabKey) {
+    setTabState(next);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.hash = next === "graph" ? "" : `tab=${next}`;
+      window.history.replaceState(null, "", url.toString());
+    }
+  }
+
+  useEffect(() => {
+    const onHashChange = () => setTabState(readTabFromHash());
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
 
   /** 任一面板写入后，刷新家族统计与图谱 SWR 缓存，保证各视图一致。 */
   const refresh = () => {
@@ -111,7 +144,8 @@ export function FamilyWorkspace({ familyId }: { familyId: string }) {
       </section>
 
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6">
-        <div className="mb-5 flex gap-1 overflow-x-auto rounded-lg border border-line bg-white p-1.5 shadow-paper">
+        {/* 窄屏横向滚动、宽屏换行：标签页已增至 11 个，只靠滚动会让页签被截断 */}
+        <div className="mb-5 flex gap-1 overflow-x-auto rounded-lg border border-line bg-white p-1.5 shadow-paper sm:flex-wrap sm:overflow-visible">
           {TABS.map((t) => (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium transition ${tab === t.key ? "bg-navy text-white" : "text-ink-soft hover:bg-cream"}`}>
@@ -140,6 +174,15 @@ export function FamilyWorkspace({ familyId }: { familyId: string }) {
               <p className="text-[11px] text-graphite">仅聚合数字 · 不展示任何人物姓名与联系方式</p>
             </div>
             <FamilyStatsPanel familyId={familyId} />
+          </div>
+        )}
+        {tab === "duplicates" && (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="font-serif text-lg font-semibold text-ink">疑似重复人物核对</h2>
+              <p className="text-[11px] text-graphite">只提示、不合并 · 逐条列出判定依据 · 不跨族谱比对</p>
+            </div>
+            <DuplicatePanel familyId={familyId} canWrite={canWrite} />
           </div>
         )}
         {tab === "people" && <PersonPanel familyId={familyId} familySurname={family.surnameText} canWrite={canWrite} onChanged={refresh} />}
