@@ -8,20 +8,25 @@
 
 记录尚未发布的功能、修复与维护性更新。
 
+## [0.2.1] - 2026-11-10
+
+### 变更
 - 开源规范化：新增 MIT `LICENSE` 与 `package.json` license 字段；README 全面重构为项目主页（新增 `README_EN.md` 英文版与 `docs/images/readme/` 下 19 张真实运行截图）；新增 `scripts/capture-readme.mjs` / `scripts/capture-cover.mjs` 截图生成器（从真实站点抓图，不进 CI）。
 - 文档校准：`docs/TEST_REPORT.md` 更新为最新实测（20 文件 / 225 单测 + 2 跳过、冒烟 323、安全审计 42、E2E 11、备份演练 48 表 / 4369 行、构建 92 条路由）；修正 `docs/COMPLETION.md`、`docs/DEPLOYMENT.md` 的陈旧数字（Next.js 16.4.5、TypeScript 6.0.3、6 个迁移、48 个 model、68 个 Route Handler）。
-
-### 修复
-
 - **测试数据污染公开面**：`smoke-archive` 为验证匿名可见性把测试族谱切换为 `PUBLIC` 后未改回，社区脚本留下的公开寻亲帖同样未回收，导致测试数据长期堆积在站点公开列表与社区流中。现在 5 套冒烟脚本在结尾统一回收自己创建的数据（先降级 `PRIVATE`，再软删除，可由所有者恢复），并各自新增 1~3 项清理断言。
 - **登录页在生产环境暴露演示口令**：`auth-form` 原本无条件渲染演示账号密码，正式部署等于向所有访客公开一个可用凭据。改为只展示账号并指向 `prisma/seed.ts`；已验证口令字面量从生产构建产物中消失。同时从 `README.md`、`README_EN.md`、`docs/USER_GUIDE.md`、`docs/API.md` 中移除该口令。
 - 修正文档中「生产构建 91 条路由」为实测 **92 条**（52 静态 / 40 动态：68 个 API + 20 个页面 + robots/sitemap）。
-
-### 新增
-
 - `scripts/cleanup-test-data.mjs` 与 `pnpm test:cleanup`：按名称前缀清理历史遗留的测试族谱与帖子，只做软删除、默认 dry-run，需 `--apply` 才执行。
 - `CONTRIBUTING.md`：数据纪律、开发环境、提交前检查、PR 规范。
 - `SECURITY.md`：私密漏洞上报流程、已实现安全机制摘要与已知限制。
+- fix(auth): 登录页不再暴露演示口令；同步文档实测数字与截图
+- fix(test): 冒烟脚本回收测试数据，避免污染公开面
+- chore: 移除内含本机路径的内部审计报告
+- chore: 清理不该入库的生成物与旧验收截图
+- docs: README 增加星标历史图（Star History，深浅色自适应）
+- docs: README 全面重构为项目主页，校准全部交付文档数字
+- chore(license): 新增 MIT LICENSE 与 package.json license 字段
+- fix(deps): 把 minimatch 收口到 11.0.1（GHSA-g3hv-75wg-m249）
 
 ## [0.2.0] - 2026-11-10
 
