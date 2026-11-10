@@ -10,7 +10,7 @@ import { audit } from "@/lib/audit";
 type Ctx = { id: string; versionId: string };
 
 const schema = z.object({
-  confirm: z.literal("RESTORE", { errorMap: () => ({ message: "恢复操作需显式确认" }) }),
+  confirm: z.literal("RESTORE", { error: "恢复操作需显式确认" }),
 });
 
 type SnapshotMember = {

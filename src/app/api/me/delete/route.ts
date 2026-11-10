@@ -8,7 +8,7 @@ import { audit } from "@/lib/audit";
 
 const schema = z.object({
   password: z.string().min(1).max(128),
-  confirm: z.literal("DELETE_MY_ACCOUNT", { errorMap: () => ({ message: "需输入 DELETE_MY_ACCOUNT 显式确认" }) }),
+  confirm: z.literal("DELETE_MY_ACCOUNT", { error: "需输入 DELETE_MY_ACCOUNT 显式确认" }),
 });
 
 /**
