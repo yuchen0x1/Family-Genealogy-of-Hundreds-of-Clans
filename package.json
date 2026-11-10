@@ -2,6 +2,7 @@
   "name": "zhonghua-xungen",
   "version": "0.2.0",
   "private": true,
+  "license": "MIT",
   "description": "中华寻根 · 百家族谱 — 中华姓氏文化与智能家族族谱平台",
   "packageManager": "pnpm@11.20.0",
   "engines": {
