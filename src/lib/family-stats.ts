@@ -20,6 +20,8 @@ export type StatMemberRow = {
   generationChar: string | null;
   branchId: string | null;
   verification: string;
+  /** 人物级可见性：决定非协作者能否看到其生卒年 */
+  visibility: string;
   createdAt: Date;
 };
 
@@ -54,6 +56,15 @@ export type FamilyStats = {
   generationChars: Array<{ char: string; count: number }>;
   /** 出生 / 去世按十年聚合，用于时间轴柱状图 */
   decades: DecadeBucket[];
+  /**
+   * 是否包含在世人物的生卒细节。
+   *
+   * 公开族谱对匿名访客只展示在世人物的姓名与世代，不展示出生日期。
+   * 若统计里仍给出「在世成员年龄分布」，等于把被刻意隐藏的信息以聚合形式
+   * 还原出来（人数少时几乎能反推出个人），因此非协作者看到的统计里
+   * `livingAges` 为空，且 `decades` 只统计已故人物的年份。
+   */
+  livingDetailsIncluded: boolean;
   /** 出生年份范围 */
   yearRange: { min: number | null; max: number | null };
   /** 分支人数 Top N（含未归属分支的「未分组」） */
@@ -121,14 +132,28 @@ function ageRangeLabel(age: number): string {
 /**
  * 纯计算：把人物行聚合成统计。
  * 不访问数据库、不读环境变量，因此可以完整单测。
+ *
+ * @param options.canSeeLivingDetails
+ *   非协作者（如匿名访客浏览公开族谱）对在世非公开人物看不到生卒日期。
+ *   传 false 时，统计只使用已故人物与主动公开的在世人物的年份，
+ *   `livingAges` 恒为空，避免以聚合形式还原被隐藏的个人信息。
  */
 export function summarizeMembers(
   rows: StatMemberRow[],
   branchNames: Map<string, string>,
   currentYear = new Date().getFullYear(),
+  options: { canSeeLivingDetails?: boolean } = {},
 ): FamilyStats {
+  const canSeeLivingDetails = options.canSeeLivingDetails ?? true;
+  /** 该人物的生卒年是否可以进入统计 */
+  const yearsVisible = (row: StatMemberRow): boolean => {
+    if (!row.isLiving) return true;
+    if (canSeeLivingDetails) return true;
+    return row.visibility === "PUBLIC";
+  };
+
   const living = rows.filter((r) => r.isLiving).length;
-  const withBirthYear = rows.filter((r) => isPlausibleYear(r.birthYear)).length;
+  const withBirthYear = rows.filter((r) => yearsVisible(r) && isPlausibleYear(r.birthYear)).length;
   const withGeneration = rows.filter((r) => typeof r.generationNumber === "number" && r.generationNumber > 0).length;
   // 「已核实」指资料核实状态为 VERIFIED；UNVERIFIED/PENDING 都不算
   const confirmed = rows.filter((r) => r.verification === "VERIFIED").length;
@@ -169,6 +194,7 @@ export function summarizeMembers(
     if (maxYear === null || year > maxYear) maxYear = year;
   };
   for (const row of rows) {
+    if (!yearsVisible(row)) continue;
     if (isPlausibleYear(row.birthYear)) {
       const d = decadeOf(row.birthYear);
       const bucket = decadeMap.get(d) ?? { births: 0, deaths: 0 };
@@ -199,14 +225,17 @@ export function summarizeMembers(
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "zh-CN"))
     .slice(0, TOP_BRANCHES);
 
-  // 在世年龄分布：只对「在世 + 有出生年 + 出生年不晚于今年」计数
+  // 在世年龄分布：只对「在世 + 有出生年 + 出生年不晚于今年」计数。
+  // 非协作者看不到在世人物的出生日期，因此也不给出年龄分布。
   const ageMap = new Map<string, number>();
-  for (const row of rows) {
-    if (!row.isLiving || !isPlausibleYear(row.birthYear)) continue;
-    const age = currentYear - row.birthYear;
-    if (age < 0) continue;
-    const label = ageRangeLabel(age);
-    ageMap.set(label, (ageMap.get(label) ?? 0) + 1);
+  if (canSeeLivingDetails) {
+    for (const row of rows) {
+      if (!row.isLiving || !isPlausibleYear(row.birthYear)) continue;
+      const age = currentYear - row.birthYear;
+      if (age < 0) continue;
+      const label = ageRangeLabel(age);
+      ageMap.set(label, (ageMap.get(label) ?? 0) + 1);
+    }
   }
   const livingAges = [...ageMap.entries()]
     .map(([range, count]) => ({ range, count }))
@@ -230,6 +259,7 @@ export function summarizeMembers(
     branches,
     verification: countBy(rows, (r) => r.verification, VERIFICATION_LABELS),
     livingAges,
+    livingDetailsIncluded: canSeeLivingDetails,
   };
 }
 
@@ -241,7 +271,10 @@ export function summarizeMembers(
  *
  * 调用方必须先完成 `assertFamilyRead` 鉴权——本函数不做权限判断。
  */
-export async function loadFamilyStats(familyId: string): Promise<FamilyStats> {
+export async function loadFamilyStats(
+  familyId: string,
+  options: { canSeeLivingDetails?: boolean } = {},
+): Promise<FamilyStats> {
   const [members, branches] = await Promise.all([
     prisma.familyMember.findMany({
       where: { familyId, deletedAt: null },
@@ -254,6 +287,7 @@ export async function loadFamilyStats(familyId: string): Promise<FamilyStats> {
         generationChar: true,
         branchId: true,
         verification: true,
+        visibility: true,
         createdAt: true,
       },
       // 上限保护：单家族统计不因超大族谱拖垮服务；超出时用 totals 说明覆盖样本
@@ -266,5 +300,5 @@ export async function loadFamilyStats(familyId: string): Promise<FamilyStats> {
   ]);
 
   const branchNames = new Map(branches.map((b) => [b.id, b.name]));
-  return summarizeMembers(members as StatMemberRow[], branchNames);
+  return summarizeMembers(members as StatMemberRow[], branchNames, undefined, options);
 }

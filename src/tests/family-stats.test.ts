@@ -11,6 +11,7 @@ function row(overrides: Partial<StatMemberRow> = {}): StatMemberRow {
     generationChar: null,
     branchId: null,
     verification: "UNVERIFIED",
+    visibility: "PRIVATE",
     createdAt: new Date("2026-01-01T00:00:00Z"),
     ...overrides,
   };
@@ -171,5 +172,53 @@ describe("家族统计聚合", () => {
     for (const forbidden of ["givenName", "surnameText", "biography", "sensitiveData", "birthDateText"]) {
       expect(serialized).not.toContain(forbidden);
     }
+  });
+
+  describe("在世人物隐私边界", () => {
+    const members = [
+      // 已故：任何访客都能看到年份
+      row({ isLiving: false, birthYear: 1900, deathYear: 1970 }),
+      // 在世且非公开：非协作者看不到出生年
+      row({ isLiving: true, birthYear: 1990, visibility: "PRIVATE" }),
+      // 在世且主动公开：任何访客都能看到
+      row({ isLiving: true, birthYear: 1985, visibility: "PUBLIC" }),
+    ];
+
+    it("协作者可见在世年龄分布，并标注已包含", () => {
+      const stats = summarizeMembers(members, new Map(), 2026, { canSeeLivingDetails: true });
+      expect(stats.livingDetailsIncluded).toBe(true);
+      expect(stats.livingAges).toEqual([
+        { range: "30-39", count: 1 },
+        { range: "40-49", count: 1 },
+      ]);
+      expect(stats.totals.withBirthYear).toBe(3);
+    });
+
+    it("非协作者不获得在世年龄分布", () => {
+      const stats = summarizeMembers(members, new Map(), 2026, { canSeeLivingDetails: false });
+      expect(stats.livingDetailsIncluded).toBe(false);
+      expect(stats.livingAges).toEqual([]);
+    });
+
+    it("非协作者的在世非公开人物不计入出生年与十年分布", () => {
+      const stats = summarizeMembers(members, new Map(), 2026, { canSeeLivingDetails: false });
+      // 已故(1900) + 在世公开(1985) 两年份可见，1990 那个被排除
+      expect(stats.totals.withBirthYear).toBe(2);
+      expect(stats.yearRange).toEqual({ min: 1900, max: 1985 });
+      expect(stats.decades.find((d) => d.decade === 1990)).toBeUndefined();
+      expect(stats.decades.find((d) => d.decade === 1980)).toMatchObject({ births: 1 });
+    });
+
+    it("人数等非敏感聚合对非协作者仍然准确", () => {
+      const stats = summarizeMembers(members, new Map(), 2026, { canSeeLivingDetails: false });
+      expect(stats.totals).toMatchObject({ members: 3, living: 2, deceased: 1 });
+      expect(stats.gender).toHaveLength(1);
+    });
+
+    it("默认包含在世细节，保持既有调用方行为", () => {
+      const stats = summarizeMembers(members, new Map(), 2026);
+      expect(stats.livingDetailsIncluded).toBe(true);
+      expect(stats.livingAges).toHaveLength(2);
+    });
   });
 });

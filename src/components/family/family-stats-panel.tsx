@@ -107,7 +107,7 @@ export function FamilyStatsPanel({ familyId }: { familyId: string }) {
 
   if (!data) return null;
 
-  const { totals, gender, generations, generationChars, decades, yearRange, branches, verification, livingAges } = data;
+  const { totals, gender, generations, generationChars, decades, yearRange, branches, verification, livingAges, livingDetailsIncluded } = data;
 
   if (totals.members === 0) {
     return <EmptyState title="还没有可统计的人物" description="先在「人物管理」中添加家族成员，统计会自动汇总。" />;
@@ -256,7 +256,11 @@ export function FamilyStatsPanel({ familyId }: { familyId: string }) {
             <h3 className="font-serif text-sm font-semibold text-ink">在世成员年龄分布</h3>
           </CardHeader>
           <CardBody>
-            {livingAges.length === 0 ? (
+            {!livingDetailsIncluded ? (
+              <p className="py-3 text-[11px] leading-5 text-graphite">
+                在世成员的出生日期默认不公开，因此不提供年龄分布。加入该族谱协作后即可查看。
+              </p>
+            ) : livingAges.length === 0 ? (
               <p className="py-3 text-[11px] text-graphite">在世成员缺少可用的出生年份，无法计算年龄。</p>
             ) : (
               <BarList
@@ -264,7 +268,11 @@ export function FamilyStatsPanel({ familyId }: { familyId: string }) {
                 emptyText="暂无数据"
               />
             )}
-            <SectionHint>仅统计「标记为在世」且填了出生年份的人物；未填出生年的人不计入，因此不会给出估算年龄。</SectionHint>
+            <SectionHint>
+              {livingDetailsIncluded
+                ? "仅统计「标记为在世」且填了出生年份的人物；未填出生年的人不计入，因此不会给出估算年龄。"
+                : "公开族谱对非协作者只展示在世成员的姓名与世代，统计同样遵循这条边界。"}
+            </SectionHint>
           </CardBody>
         </Card>
       </div>
