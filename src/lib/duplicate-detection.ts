@@ -54,11 +54,29 @@ export type DuplicatePair = {
   members: [DuplicateMemberRef, DuplicateMemberRef];
 };
 
+/**
+ * 超大同名组。
+ *
+ * 同一姓名下有 N 人时，两两组合是 N(N-1)/2：500 个同名人物会产生 12.4 万个
+ * 配对、约 47MB JSON。这类情况几乎必然意味着「某支系的字辈用字被反复复用」，
+ * 逐个列举既没有可读性也没有必要。因此超过阈值时改为**组级提示**：
+ * 告诉使用者这一组有多少人、需要人工去列表里核对，而不是返回组合爆炸的结果。
+ */
+export type OversizedGroup = {
+  name: string;
+  count: number;
+  reason: string;
+};
+
 export type DuplicateReport = {
   /** 已扫描的人物数 */
   scanned: number;
   /** 疑似重复配对，按置信度与姓名排序 */
   pairs: DuplicatePair[];
+  /** 人数过多、不做两两配对的同名组 */
+  oversizedGroups: OversizedGroup[];
+  /** 配对是否因达到上限而被截断 */
+  truncated: boolean;
   /** 因超出扫描上限而未参与比对的人数；0 表示完整扫描 */
   notScanned: number;
   /** 扫描上限，便于界面如实说明覆盖范围 */
@@ -67,6 +85,12 @@ export type DuplicateReport = {
 
 /** 单次扫描的人物上限：超大家族分批处理，避免一次读入过多行 */
 export const DUPLICATE_SCAN_LIMIT = 20_000;
+
+/** 单个同名组超过该人数就不再两两配对，改为组级提示 */
+export const DUPLICATE_BUCKET_LIMIT = 30;
+
+/** 返回的配对上限，防止超大族谱把响应撑爆 */
+export const DUPLICATE_PAIR_LIMIT = 400;
 
 const CONFIDENCE_ORDER: Record<DuplicateConfidence, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
 
@@ -158,7 +182,11 @@ function comparePair(a: DuplicateCandidateRow, b: DuplicateCandidateRow): { conf
  *   - 另按「字号」「别名」各建一份索引，只把跨桶的线索配对补上
  * 家族规模上万时，同名桶通常只有个位数，整体接近线性。
  */
-export function findDuplicateCandidates(rows: DuplicateCandidateRow[]): DuplicatePair[] {
+export function findDuplicateCandidates(
+  rows: DuplicateCandidateRow[],
+  options: { skipNameBucketsAbove?: number } = {},
+): DuplicatePair[] {
+  const skipAbove = options.skipNameBucketsAbove ?? Number.POSITIVE_INFINITY;
   const pairs = new Map<string, DuplicatePair>();
 
   const addPair = (a: DuplicateCandidateRow, b: DuplicateCandidateRow) => {
@@ -185,6 +213,8 @@ export function findDuplicateCandidates(rows: DuplicateCandidateRow[]): Duplicat
   }
   for (const bucket of byName.values()) {
     if (bucket.length < 2) continue;
+    // 超大同名组由 analyzeDuplicateCandidates 以组级提示呈现，这里跳过两两枚举
+    if (bucket.length > skipAbove) continue;
     for (let i = 0; i < bucket.length; i += 1) {
       for (let j = i + 1; j < bucket.length; j += 1) addPair(bucket[i], bucket[j]);
     }
@@ -218,6 +248,55 @@ export function findDuplicateCandidates(rows: DuplicateCandidateRow[]): Duplicat
 }
 
 /**
+ * 带边界的检测入口：在纯配对逻辑之上加两道保护。
+ *
+ * 1. 同名组超过 `bucketLimit` 人时，不再两两枚举，改为一条组级提示。
+ *    这类组几乎必然是「字辈用字被大量复用」，逐个列配对既无意义也会组合爆炸。
+ * 2. 配对总数超过 `pairLimit` 时截断，并置 `truncated`，让界面如实告知
+ *    使用者「还有更多，请缩小范围或直接在人物列表核对」。
+ */
+export function analyzeDuplicateCandidates(
+  rows: DuplicateCandidateRow[],
+  options: { bucketLimit?: number; pairLimit?: number } = {},
+): { pairs: DuplicatePair[]; oversizedGroups: OversizedGroup[]; truncated: boolean } {
+  const bucketLimit = options.bucketLimit ?? DUPLICATE_BUCKET_LIMIT;
+  const pairLimit = options.pairLimit ?? DUPLICATE_PAIR_LIMIT;
+
+  // 先按姓名统计，把超大同名组挑出来单独处理
+  const byName = new Map<string, DuplicateCandidateRow[]>();
+  for (const row of rows) {
+    const key = `${row.surnameText}\u0000${row.givenName}`;
+    const bucket = byName.get(key);
+    if (bucket) bucket.push(row);
+    else byName.set(key, [row]);
+  }
+
+  const oversizedGroups: OversizedGroup[] = [];
+  const regular: DuplicateCandidateRow[] = [];
+  for (const bucket of byName.values()) {
+    if (bucket.length > bucketLimit) {
+      const first = bucket[0];
+      oversizedGroups.push({
+        name: `${first.surnameText}${first.givenName}`,
+        count: bucket.length,
+        reason: `该姓名下有 ${bucket.length} 人，超过 ${bucketLimit} 人的逐对比较上限。常见于字辈用字被反复复用，建议先在人物管理中按世代与生卒年核对。`,
+      });
+      // 仍然参与字号/别名线索比对，只是不再做同名两两配对
+      regular.push(...bucket);
+      continue;
+    }
+    regular.push(...bucket);
+  }
+
+  const all = findDuplicateCandidates(regular, { skipNameBucketsAbove: bucketLimit });
+  const truncated = all.length > pairLimit;
+  const pairs = truncated ? all.slice(0, pairLimit) : all;
+
+  oversizedGroups.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "zh-CN"));
+  return { pairs, oversizedGroups, truncated };
+}
+
+/**
  * 读取并检测一个家族的疑似重复人物。
  *
  * 调用方必须先完成 `assertFamilyRead` 鉴权——本函数不做权限判断。
@@ -243,13 +322,17 @@ export async function loadDuplicateCandidates(familyId: string): Promise<Duplica
     take: DUPLICATE_SCAN_LIMIT + 1,
   });
 
-  const truncated = rows.length > DUPLICATE_SCAN_LIMIT;
-  const scanned = truncated ? rows.slice(0, DUPLICATE_SCAN_LIMIT) : rows;
+  const scanTruncated = rows.length > DUPLICATE_SCAN_LIMIT;
+  const scanned = scanTruncated ? rows.slice(0, DUPLICATE_SCAN_LIMIT) : rows;
+  const analysis = analyzeDuplicateCandidates(scanned);
 
   return {
     scanned: scanned.length,
-    pairs: findDuplicateCandidates(scanned),
-    notScanned: truncated ? rows.length - DUPLICATE_SCAN_LIMIT : 0,
+    pairs: analysis.pairs,
+    oversizedGroups: analysis.oversizedGroups,
+    // 两种截断都要如实告知：扫描被截断，或配对数达到上限
+    truncated: analysis.truncated,
+    notScanned: scanTruncated ? rows.length - DUPLICATE_SCAN_LIMIT : 0,
     scanLimit: DUPLICATE_SCAN_LIMIT,
   };
 }

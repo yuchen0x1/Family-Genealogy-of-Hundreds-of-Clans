@@ -87,6 +87,26 @@ export function DuplicatePanel({ familyId, canWrite }: { familyId: string; canWr
         </CardBody>
       </Card>
 
+      {data.oversizedGroups.length > 0 && (
+        <Card className="border-[#e5d3ae] bg-[#fbf7ee]">
+          <CardBody className="space-y-2">
+            <div className="flex items-center gap-2 text-[11px] font-semibold text-ink">
+              <TriangleAlert className="h-3.5 w-3.5 text-[#8a6a35]" />
+              同名人数过多的分组（未逐对比较）
+            </div>
+            <ul className="space-y-1.5">
+              {data.oversizedGroups.map((g) => (
+                <li key={g.name} className="text-[11px] leading-5 text-ink-soft">
+                  <span className="font-serif text-ink">{g.name}</span>
+                  <span className="ml-1.5 tabular-nums text-graphite">{g.count} 人</span>
+                  <span className="ml-1.5">{g.reason}</span>
+                </li>
+              ))}
+            </ul>
+          </CardBody>
+        </Card>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-1.5">
           {(["ALL", "HIGH", "MEDIUM", "LOW"] as const).map((key) => {
@@ -110,6 +130,12 @@ export function DuplicatePanel({ familyId, canWrite }: { familyId: string; canWr
           {data.notScanned > 0 && ` · 超出 ${data.scanLimit} 人上限，另有 ${data.notScanned} 人未参与比对`}
         </span>
       </div>
+
+      {data.truncated && (
+        <div className="rounded-lg border border-gold/40 bg-[#fbf7ee] p-2.5 text-[11px] leading-5 text-ink">
+          配对结果已达返回上限，仅展示前 {data.pairs.length} 对。请先处理下列高置信度条目，处理后重新检查。
+        </div>
+      )}
 
       {visible.length === 0 ? (
         <EmptyState
