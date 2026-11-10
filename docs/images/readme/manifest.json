@@ -1,0 +1,96 @@
+{
+  "generatedAt": "2026-11-10T13:40:02.772Z",
+  "base": "http://127.0.0.1:3000",
+  "files": [
+    {
+      "name": "home",
+      "url": "/",
+      "file": "C:\\Users\\lenmo\\Desktop\\Family Genealogy of Hundreds of Clans\\docs\\images\\readme\\home.png"
+    },
+    {
+      "name": "surnames",
+      "url": "/surnames",
+      "file": "C:\\Users\\lenmo\\Desktop\\Family Genealogy of Hundreds of Clans\\docs\\images\\readme\\surnames.png"
+    },
+    {
+      "name": "surname-detail",
+      "url": "/surnames/%E9%99%88",
+      "file": "C:\\Users\\lenmo\\Desktop\\Family Genealogy of Hundreds of Clans\\docs\\images\\readme\\surname-detail.png"
+    },
+    {
+      "name": "migration",
+      "url": "/roots",
+      "file": "C:\\Users\\lenmo\\Desktop\\Family Genealogy of Hundreds of Clans\\docs\\images\\readme\\migration.png"
+    },
+    {
+      "name": "families",
+      "url": "/families",
+      "file": "C:\\Users\\lenmo\\Desktop\\Family Genealogy of Hundreds of Clans\\docs\\images\\readme\\families.png"
+    },
+    {
+      "name": "genealogy",
+      "url": "/families/2746a424-b3d0-4a1e-90ca-8b1920b6f514",
+      "file": "C:\\Users\\lenmo\\Desktop\\Family Genealogy of Hundreds of Clans\\docs\\images\\readme\\genealogy.png"
+    },
+    {
+      "name": "family-stats",
+      "url": "/families/2746a424-b3d0-4a1e-90ca-8b1920b6f514#tab=stats",
+      "file": "C:\\Users\\lenmo\\Desktop\\Family Genealogy of Hundreds of Clans\\docs\\images\\readme\\family-stats.png"
+    },
+    {
+      "name": "people",
+      "url": "/families/2746a424-b3d0-4a1e-90ca-8b1920b6f514#tab=people",
+      "file": "C:\\Users\\lenmo\\Desktop\\Family Genealogy of Hundreds of Clans\\docs\\images\\readme\\people.png"
+    },
+    {
+      "name": "relationships",
+      "url": "/families/2746a424-b3d0-4a1e-90ca-8b1920b6f514#tab=relations",
+      "file": "C:\\Users\\lenmo\\Desktop\\Family Genealogy of Hundreds of Clans\\docs\\images\\readme\\relationships.png"
+    },
+    {
+      "name": "generations",
+      "url": "/families/2746a424-b3d0-4a1e-90ca-8b1920b6f514#tab=generations",
+      "file": "C:\\Users\\lenmo\\Desktop\\Family Genealogy of Hundreds of Clans\\docs\\images\\readme\\generations.png"
+    },
+    {
+      "name": "archive",
+      "url": "/families/2746a424-b3d0-4a1e-90ca-8b1920b6f514#tab=archive",
+      "file": "C:\\Users\\lenmo\\Desktop\\Family Genealogy of Hundreds of Clans\\docs\\images\\readme\\archive.png"
+    },
+    {
+      "name": "import-export",
+      "url": "/families/2746a424-b3d0-4a1e-90ca-8b1920b6f514#tab=io",
+      "file": "C:\\Users\\lenmo\\Desktop\\Family Genealogy of Hundreds of Clans\\docs\\images\\readme\\import-export.png"
+    },
+    {
+      "name": "community",
+      "url": "/community",
+      "file": "C:\\Users\\lenmo\\Desktop\\Family Genealogy of Hundreds of Clans\\docs\\images\\readme\\community.png"
+    },
+    {
+      "name": "me",
+      "url": "/me",
+      "file": "C:\\Users\\lenmo\\Desktop\\Family Genealogy of Hundreds of Clans\\docs\\images\\readme\\me.png"
+    },
+    {
+      "name": "guide",
+      "url": "/guide",
+      "file": "C:\\Users\\lenmo\\Desktop\\Family Genealogy of Hundreds of Clans\\docs\\images\\readme\\guide.png"
+    },
+    {
+      "name": "admin",
+      "url": "/admin",
+      "file": "C:\\Users\\lenmo\\Desktop\\Family Genealogy of Hundreds of Clans\\docs\\images\\readme\\admin.png"
+    },
+    {
+      "name": "admin-audit",
+      "url": "/admin",
+      "file": "C:\\Users\\lenmo\\Desktop\\Family Genealogy of Hundreds of Clans\\docs\\images\\readme\\admin-audit.png"
+    },
+    {
+      "name": "admin-update",
+      "url": "/admin",
+      "file": "C:\\Users\\lenmo\\Desktop\\Family Genealogy of Hundreds of Clans\\docs\\images\\readme\\admin-update.png"
+    }
+  ]
+}

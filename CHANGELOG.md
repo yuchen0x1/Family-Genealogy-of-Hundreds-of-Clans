@@ -8,6 +8,9 @@
 
 记录尚未发布的功能、修复与维护性更新。
 
+- 开源规范化：新增 MIT `LICENSE` 与 `package.json` license 字段；README 全面重构为项目主页（新增 `README_EN.md` 英文版与 `docs/images/readme/` 下 20 张真实运行截图）；新增 `scripts/capture-readme.mjs` / `scripts/capture-cover.mjs` 截图生成器（从真实站点抓图，不进 CI）。
+- 文档校准：`docs/TEST_REPORT.md` 重写为 2026-11-10 发布轮实测（20 文件 / 225 单测 + 2 跳过、冒烟 314、安全审计 42、E2E 11、备份演练 48 表 / 4369 行、构建 91 条路由）；修正 `docs/COMPLETION.md`、`docs/DEPLOYMENT.md` 的陈旧数字（Next.js 16.4.5、TypeScript 6.0.3、6 个迁移、48 个 model、68 个 Route Handler）。
+
 ## [0.2.0] - 2026-11-10
 
 ### 新增

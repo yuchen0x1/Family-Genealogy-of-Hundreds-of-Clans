@@ -1,13 +1,13 @@
 # 完成与未完成清单
 
-生成时间：2026-11-08。本文如实区分「已实现并验证」「已实现但未在本机验证」「明确未完成/依赖外部条件」，未测试的功能一律不标记为完成。
+生成时间：2026-11-08（2026-11-10 v0.2.0 发布轮更新）。本文如实区分「已实现并验证」「已实现但未在本机验证」「明确未完成/依赖外部条件」，未测试的功能一律不标记为完成。
 
 ## 1. 最终验收标准逐项对照
 
 | # | 验收项 | 状态 | 依据 |
 | --- | --- | --- | --- |
-| 1 | 网站可启动 | ✅ 已验证 | `pnpm dev`（3000）与 `pnpm build && PORT=3100 pnpm start` 均返回 200；`/api/health` = `{"status":"ok","database":true,"cache":"redis"}` |
-| 2 | 数据库可连接 | ✅ 已验证 | PostgreSQL 17，4 个迁移，47 张业务表；备份导出 47 表 / 1017 行 |
+| 1 | 网站可启动 | ✅ 已验证 | `pnpm dev`（3000）与 `pnpm build && pnpm start` 均返回 200；`/api/health` = `{"status":"ok","database":true,"cache":"redis|memory"}`（Redis 未连接自动降级为进程内缓存） |
+| 2 | 数据库可连接 | ✅ 已验证 | PostgreSQL 17，6 个迁移，48 个 model；备份导出 48 表 / 4369 行（2026-11-10 演练） |
 | 3 | 注册登录 | ✅ 已验证 | 冒烟、E2E、安全审计均覆盖；会话/锁定/限流有效 |
 | 4 | 创建家族 | ✅ 已验证 | `/families` 与前端创建表单，默认 PRIVATE |
 | 5 | 人物管理 | ✅ 已验证 | CRUD、回收站恢复、敏感字段加密、在世人员隐私降级 |
@@ -22,7 +22,7 @@
 | 14 | 导入导出 | ✅ 已验证 | 7 种导出真实字节；导入预览不落库、确认后事务写入 |
 | 15 | 协作 | ✅ 已验证 | 邀请链接、角色权限、邮箱裁剪 |
 | 16 | 隐私权限 | ✅ 已验证 | 家族级 + 人物级、私有默认、加密字段、匿名与管理员边界 |
-| 17 | 后台 | ✅ 已验证 | 8 组接口 + 界面，64 项冒烟含权限边界 |
+| 17 | 后台 | ✅ 已验证 | 8 组接口 + 界面，73 项冒烟含权限边界与系统更新段落 |
 | 18 | 移动端 / 桌面端 | ✅ 已验证 | Playwright 桌面 8 项 + 移动端 3 项，主要页面横向溢出 0 |
 | 19 | 正式部署能力 | ⚠️ 部分验证 | 生产构建与 `next start` 已验证；Dockerfile / Compose / Nginx 配置已交付但**本机未执行镜像构建**（环境策略阻断 Docker 引擎） |
 
@@ -30,9 +30,9 @@
 
 | 交付物 | 路径 |
 | --- | --- |
-| 完整源码 | `src/`（`src/app/` 20 个页面、63 个 API 路由、`src/components/`、`src/lib/`） |
-| 数据库结构与 ER 模型 | `prisma/schema.prisma`（47 个 model，含枚举、外键、索引、唯一约束、软删除、时间戳） |
-| 迁移文件 | `prisma/migrations/` 4 个 SQL 迁移（init / search_indexes / place_review / perf_indexes）+ `migration_lock.toml` |
+| 完整源码 | `src/`（`src/app/` 20 个页面、68 个 API 路由、`src/components/`、`src/lib/`） |
+| 数据库结构与 ER 模型 | `prisma/schema.prisma`（48 个 model，含枚举、外键、索引、唯一约束、软删除、时间戳） |
+| 迁移文件 | `prisma/migrations/` 6 个 SQL 迁移（init / search_indexes / place_review / perf_indexes / add_update_jobs / member_surname_index）+ `migration_lock.toml` |
 | seed 与史料定义 | `prisma/seed.ts`、`prisma/seed-data.ts`（史料来源、姓氏、地名、迁徙、演示数据，明确标注演示与可信程度） |
 | API 文档 | `docs/API.md` |
 | Docker 配置 | `Dockerfile`、`docker-compose.yml`、`.dockerignore`、`docker/postgres/init-extensions.sql` |
@@ -48,8 +48,8 @@
 
 ## 3. 已完成的功能模块（12 个阶段）
 
-1. 环境与工程骨架（Next.js 15 + React 19 + TS 5.9 + Tailwind v4 + Prisma 6）
-2. PostgreSQL 17 + 47 张业务表、索引、软删除、版本快照、来源引用
+1. 环境与工程骨架（Next.js 16 + React 19 + TS 6.0 + Tailwind v4 + Prisma 6）
+2. PostgreSQL 17 + 48 张业务表、索引、软删除、版本快照、来源引用
 3. 认证与 RBAC（scrypt、HttpOnly Cookie、token 摘要、角色权限）
 4. 姓氏知识库 + 历史寻根（含合规地图）
 4b. 族谱前端页面（列表、创建、详情工作区与全部管理面板）
@@ -122,3 +122,16 @@
 - 新增公共 `ErrorState` 组件，修复 5 处请求失败后永久转圈或被误显示为「暂无数据」（admin 总览/用户/审计、社区、姓氏、搜索、图谱）。
 
 **已知遗留**（沿用第 4 节口径，本轮未处理）：Docker 镜像本机构建、CSP nonce、E2E 跑在 dev server、a11y/SEO 深化、`scryptSync` 异步化、血缘环检测增量算法、WebSocket/队列等外部依赖项。
+
+## 8. 2026-11-10 发布轮（v0.2.0）
+
+全部经 `pnpm lint`、`pnpm typecheck`、`pnpm test`（20 文件 / 225 通过 + 2 跳过）、5 套冒烟（314 项）、安全审计（42/42）、Playwright E2E（11 项）、`pnpm build`（91 条路由）与备份恢复演练（48 表 / 4369 行）复验；以 `v0.2.0` tag 发布，CI 自动创建 GitHub Release。
+
+- **在线更新**：自托管实例后台检查上游版本、查看更新日志、一键升级（SOURCE/DOCKER/SIMULATE 三驱动、强制备份、发布包流式安全校验、任务落库互斥与自愈）；更新提醒（后台角标 + 登录后提示条）。
+- **发布工具链**：`pnpm release` + CI tag 自动发布 + 构建版本注入（`APP_VERSION` / `APP_BUILD_SHA`）。
+- **家族统计仪表盘**：人数与在世比例、性别、世代分布、生卒年代分布、分支人数、字辈用字频率、资料核实状态等多维度聚合，遵循在世人物隐私边界（修复了统计接口可反推在世者生辰的隐私回归）。
+- **疑似重复人物核对**：三档置信度、规模上限防组合爆炸；只提示、绝不自动合并。
+- **人物搜索覆盖姓氏/字号/别名**（原只搜名），姓氏字段补 pg_trgm 索引。
+- **构建产物修复**：排除 `UPLOAD_DIR` 相关 file trace，`.next` 329MB → 139MB，用户上传承档不再进入构建产物。
+- **依赖安全**：GHSA-g3hv-75wg-m249（minimatch）按漏洞区间收口至 11.0.1，`pnpm-workspace.yaml` 记录了为何不能全局 override。
+- **开源规范化**：新增 MIT `LICENSE`、README 全面重构为项目主页、新增 README_EN 与截图（`docs/images/readme/`）。
