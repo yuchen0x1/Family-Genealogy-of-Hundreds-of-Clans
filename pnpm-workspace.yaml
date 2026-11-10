@@ -4,3 +4,9 @@ allowBuilds:
   esbuild: true
   prisma: true
   sharp: true
+
+# next 15.x 固定依赖 postcss 8.4.31，该版本存在 sourceMappingURL 任意文件读取
+# 与 </style> 未转义两项 high 漏洞。上游 15.x 未跟进，此处强制统一到已修复的
+# 8.5.x（postcss 同主版本内向后兼容）。升 next 16 或等官方跟进后可移除。
+overrides:
+  postcss: ^8.5.32
