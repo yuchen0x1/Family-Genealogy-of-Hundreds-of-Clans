@@ -92,11 +92,11 @@ export function DuplicatePanel({ familyId, canWrite }: { familyId: string; canWr
           <CardBody className="space-y-2">
             <div className="flex items-center gap-2 text-[11px] font-semibold text-ink">
               <TriangleAlert className="h-3.5 w-3.5 text-[#8a6a35]" />
-              同名人数过多的分组（未逐对比较）
+              重复值过多的分组（未逐对比对）
             </div>
             <ul className="space-y-1.5">
               {data.oversizedGroups.map((g) => (
-                <li key={g.name} className="text-[11px] leading-5 text-ink-soft">
+                <li key={`${g.kind}:${g.name}`} className="text-[11px] leading-5 text-ink-soft">
                   <span className="font-serif text-ink">{g.name}</span>
                   <span className="ml-1.5 tabular-nums text-graphite">{g.count} 人</span>
                   <span className="ml-1.5">{g.reason}</span>

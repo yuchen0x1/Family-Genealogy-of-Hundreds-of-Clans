@@ -63,6 +63,9 @@ export type DuplicatePair = {
  * 告诉使用者这一组有多少人、需要人工去列表里核对，而不是返回组合爆炸的结果。
  */
 export type OversizedGroup = {
+  /** 哪种字段导致了高基数分组 */
+  kind: "name" | "courtesyName" | "alias";
+  /** 同名组显示人名；字号/别名组显示带字段类型的线索 */
   name: string;
   count: number;
   reason: string;
@@ -174,23 +177,40 @@ function comparePair(a: DuplicateCandidateRow, b: DuplicateCandidateRow): { conf
   return null;
 }
 
+export type FindPairsOptions = {
+  /** 同名组人数超过该值时跳过两两枚举（由调用方给出组级提示） */
+  skipNameBucketsAbove?: number;
+  /** 这些共享字号值过于常见，不作为配对线索 */
+  skipCourtesyValues?: ReadonlySet<string>;
+  /** 这些共享别名值过于常见，不作为配对线索 */
+  skipAliasValues?: ReadonlySet<string>;
+  /** 配对数量上限；达到后立即停止遍历，而不是先生成再截断 */
+  pairLimit?: number;
+};
+
+type CollectResult = { pairs: DuplicatePair[]; hitLimit: boolean };
+
 /**
- * 纯计算：从人物行中找出疑似重复的配对。
+ * 收集疑似配对（内部实现）。
  *
  * 分桶策略（避免 O(n²)）：
  *   - 主要按「姓+名」分桶，桶内两两比较
  *   - 另按「字号」「别名」各建一份索引，只把跨桶的线索配对补上
  * 家族规模上万时，同名桶通常只有个位数，整体接近线性。
+ *
+ * 关键：达到 `pairLimit` 后立即停止遍历，`hitLimit` 如实反映是否被截断。
+ * 这样高基数字段（几百人共用同一别名）不会先构造巨大数组再丢弃。
  */
-export function findDuplicateCandidates(
-  rows: DuplicateCandidateRow[],
-  options: { skipNameBucketsAbove?: number } = {},
-): DuplicatePair[] {
+function collectPairs(rows: DuplicateCandidateRow[], options: FindPairsOptions = {}): CollectResult {
   const skipAbove = options.skipNameBucketsAbove ?? Number.POSITIVE_INFINITY;
+  const pairLimit = options.pairLimit ?? Number.POSITIVE_INFINITY;
+  const skipCourtesy = options.skipCourtesyValues ?? new Set<string>();
+  const skipAlias = options.skipAliasValues ?? new Set<string>();
   const pairs = new Map<string, DuplicatePair>();
+  let hitLimit = false;
 
   const addPair = (a: DuplicateCandidateRow, b: DuplicateCandidateRow) => {
-    if (a.id === b.id) return;
+    if (hitLimit || a.id === b.id) return;
     const key = pairKey(a.id, b.id);
     if (pairs.has(key)) return;
     const verdict = comparePair(a, b);
@@ -201,6 +221,7 @@ export function findDuplicateCandidates(
       reasons: verdict.reasons,
       members: [toRef(a), toRef(b)],
     });
+    if (pairs.size >= pairLimit) hitLimit = true;
   };
 
   // 1) 同名分桶
@@ -212,39 +233,57 @@ export function findDuplicateCandidates(
     else byName.set(key, [row]);
   }
   for (const bucket of byName.values()) {
+    if (hitLimit) break;
     if (bucket.length < 2) continue;
     // 超大同名组由 analyzeDuplicateCandidates 以组级提示呈现，这里跳过两两枚举
     if (bucket.length > skipAbove) continue;
-    for (let i = 0; i < bucket.length; i += 1) {
-      for (let j = i + 1; j < bucket.length; j += 1) addPair(bucket[i], bucket[j]);
+    for (let i = 0; i < bucket.length && !hitLimit; i += 1) {
+      for (let j = i + 1; j < bucket.length && !hitLimit; j += 1) addPair(bucket[i], bucket[j]);
     }
   }
 
   // 2) 字号 / 别名索引：仅用于补「姓名不同但线索相同」的配对
-  const addBySharedField = (pick: (row: DuplicateCandidateRow) => string | null) => {
+  const addBySharedField = (pick: (row: DuplicateCandidateRow) => string | null, skip: ReadonlySet<string>) => {
+    if (hitLimit) return;
     const index = new Map<string, DuplicateCandidateRow[]>();
     for (const row of rows) {
       const value = (pick(row) ?? "").trim();
-      if (!value) continue;
+      if (!value || skip.has(value)) continue;
       const bucket = index.get(value);
       if (bucket) bucket.push(row);
       else index.set(value, [row]);
     }
     for (const bucket of index.values()) {
+      if (hitLimit) return;
       if (bucket.length < 2) continue;
-      for (let i = 0; i < bucket.length; i += 1) {
-        for (let j = i + 1; j < bucket.length; j += 1) addPair(bucket[i], bucket[j]);
+      // 超大字号/别名桶同样可能是高基数（例如多人都填「无」），不可两两枚举。
+      if (bucket.length > skipAbove) continue;
+      for (let i = 0; i < bucket.length && !hitLimit; i += 1) {
+        for (let j = i + 1; j < bucket.length && !hitLimit; j += 1) addPair(bucket[i], bucket[j]);
       }
     }
   };
-  addBySharedField((r) => r.courtesyName);
-  addBySharedField((r) => r.alias);
+  addBySharedField((r) => r.courtesyName, skipCourtesy);
+  addBySharedField((r) => r.alias, skipAlias);
 
-  return [...pairs.values()].sort((a, b) => {
+  const sorted = [...pairs.values()].sort((a, b) => {
     const byConfidence = CONFIDENCE_ORDER[a.confidence] - CONFIDENCE_ORDER[b.confidence];
     if (byConfidence !== 0) return byConfidence;
     return a.members[0].name.localeCompare(b.members[0].name, "zh-CN");
   });
+  return { pairs: sorted, hitLimit };
+}
+
+/**
+ * 纯计算：从人物行中找出疑似重复的配对。
+ * 默认不设上限，便于测试与调用方自行控制；生产路径请用
+ * `analyzeDuplicateCandidates`，那里带有组级提示与配对上限。
+ */
+export function findDuplicateCandidates(
+  rows: DuplicateCandidateRow[],
+  options: FindPairsOptions = {},
+): DuplicatePair[] {
+  return collectPairs(rows, options).pairs;
 }
 
 /**
@@ -272,28 +311,66 @@ export function analyzeDuplicateCandidates(
   }
 
   const oversizedGroups: OversizedGroup[] = [];
+  const recordOversized = (kind: OversizedGroup["kind"], name: string, count: number, reason: string) => {
+    oversizedGroups.push({ kind, name, count, reason });
+  };
   const regular: DuplicateCandidateRow[] = [];
   for (const bucket of byName.values()) {
     if (bucket.length > bucketLimit) {
       const first = bucket[0];
-      oversizedGroups.push({
-        name: `${first.surnameText}${first.givenName}`,
-        count: bucket.length,
-        reason: `该姓名下有 ${bucket.length} 人，超过 ${bucketLimit} 人的逐对比较上限。常见于字辈用字被反复复用，建议先在人物管理中按世代与生卒年核对。`,
-      });
-      // 仍然参与字号/别名线索比对，只是不再做同名两两配对
+      recordOversized(
+        "name",
+        `${first.surnameText}${first.givenName}`,
+        bucket.length,
+        `该姓名下有 ${bucket.length} 人，超过 ${bucketLimit} 人的逐对比较上限。常见于字辈用字被反复复用，建议先在人物管理中按世代与生卒年核对。`,
+      );
       regular.push(...bucket);
       continue;
     }
     regular.push(...bucket);
   }
 
-  const all = findDuplicateCandidates(regular, { skipNameBucketsAbove: bucketLimit });
-  const truncated = all.length > pairLimit;
-  const pairs = truncated ? all.slice(0, pairLimit) : all;
+  // 高基数的共享字号/别名同样可能触发组合爆炸，先给组级提示并把该字段
+  // 从逐对比对中屏蔽。常见低信息量值（例如「无」）不会产生几万条候选。
+  const oversizedCourtesy = new Set<string>();
+  const oversizedAlias = new Set<string>();
+  const collectOversizedSharedField = (
+    kind: "courtesyName" | "alias",
+    label: "字号" | "别名",
+    pick: (row: DuplicateCandidateRow) => string | null,
+    target: Set<string>,
+  ) => {
+    const index = new Map<string, DuplicateCandidateRow[]>();
+    for (const row of regular) {
+      const value = (pick(row) ?? "").trim();
+      if (!value) continue;
+      const bucket = index.get(value);
+      if (bucket) bucket.push(row);
+      else index.set(value, [row]);
+    }
+    for (const [value, bucket] of index) {
+      if (bucket.length <= bucketLimit) continue;
+      target.add(value);
+      recordOversized(
+        kind,
+        `${label}「${value}」`,
+        bucket.length,
+        `有 ${bucket.length} 人共用同一${label}「${value}」，超过 ${bucketLimit} 人的线索比对上限。这类重复值通常没有区分度（例如多人填「无」），已跳过该字段的逐对比对。`,
+      );
+    }
+  };
+  collectOversizedSharedField("courtesyName", "字号", (r) => r.courtesyName, oversizedCourtesy);
+  collectOversizedSharedField("alias", "别名", (r) => r.alias, oversizedAlias);
+
+  const { pairs, hitLimit } = collectPairs(regular, {
+    skipNameBucketsAbove: bucketLimit,
+    skipCourtesyValues: oversizedCourtesy,
+    skipAliasValues: oversizedAlias,
+    pairLimit,
+  });
 
   oversizedGroups.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "zh-CN"));
-  return { pairs, oversizedGroups, truncated };
+  return { pairs, oversizedGroups, truncated: hitLimit };
 }
 
 /**

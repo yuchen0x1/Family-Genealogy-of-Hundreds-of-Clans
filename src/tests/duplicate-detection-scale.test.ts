@@ -125,4 +125,61 @@ describe("重复检测的规模边界", () => {
     expect(findDuplicateCandidates(rows, { skipNameBucketsAbove: 5 })).toEqual([]);
     expect(findDuplicateCandidates(rows, { skipNameBucketsAbove: 10 })).toHaveLength(45);
   });
+
+  it("高基数共享别名不再两两枚举，改为组级提示", () => {
+    // 40 人都把别名填成「无」：修复前会产生 C(40,2)=780 个配对
+    const rows = Array.from({ length: 40 }, (_, i) =>
+      row({ givenName: `名${i}`, alias: "无" }),
+    );
+    const result = analyzeDuplicateCandidates(rows);
+    expect(result.pairs).toEqual([]);
+    expect(result.oversizedGroups).toHaveLength(1);
+    expect(result.oversizedGroups[0]).toMatchObject({
+      kind: "alias",
+      name: "别名「无」",
+      count: 40,
+    });
+    expect(result.truncated).toBe(false);
+  });
+
+  it("高基数共享字号同样被屏蔽，且不参与的只是该字段", () => {
+    // 同为字号「文正」的 35 人：字号线索跳过，但他们若同名仍按姓名比较
+    const rows = Array.from({ length: 35 }, (_, i) =>
+      row({ givenName: i < 2 ? "守业" : `名${i}`, courtesyName: "文正" }),
+    );
+    const result = analyzeDuplicateCandidates(rows);
+    expect(result.oversizedGroups.some((g) => g.kind === "courtesyName" && g.count === 35)).toBe(true);
+    // 同名的两人仍被检出（走姓名分桶，不走字号）
+    expect(result.pairs).toHaveLength(1);
+    expect(result.pairs[0].members.every((m) => m.name === "陈守业")).toBe(true);
+  });
+
+  it("低基数共享别名仍正常产生候选", () => {
+    const rows = [
+      row({ givenName: "甲", alias: "阿三" }),
+      row({ givenName: "乙", alias: "阿三" }),
+    ];
+    const result = analyzeDuplicateCandidates(rows);
+    expect(result.oversizedGroups).toEqual([]);
+    expect(result.pairs).toHaveLength(1);
+    expect(result.pairs[0].confidence).toBe("LOW");
+  });
+
+  it("纯函数支持按值屏蔽特定字号/别名", () => {
+    const rows = [
+      row({ givenName: "甲", alias: "无" }),
+      row({ givenName: "乙", alias: "无" }),
+    ];
+    expect(findDuplicateCandidates(rows)).toHaveLength(1);
+    expect(findDuplicateCandidates(rows, { skipAliasValues: new Set(["无"]) })).toEqual([]);
+  });
+
+  it("达到配对上限后立即停止，不再枚举剩余组合", () => {
+    // 20 人同名 → 190 对；上限设为 5 时只应收集 5 对
+    const rows = sameName(20);
+    const result = findDuplicateCandidates(rows, { pairLimit: 5 });
+    expect(result).toHaveLength(5);
+    // 未设上限时同一批数据是 190 对，证明提前退出而非截断后丢弃
+    expect(findDuplicateCandidates(rows)).toHaveLength(190);
+  });
 });
