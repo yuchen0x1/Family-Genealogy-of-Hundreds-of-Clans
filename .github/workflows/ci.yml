@@ -55,6 +55,21 @@ jobs:
           ' CHANGELOG.md)"
           gh release create "$tag" --title "$tag" --notes "$body"
 
+      # 项目是自托管服务端应用，没有 .apk/.exe；这里产出具名发布包，
+      # 让 Release 页面有一个明确的下载项，而不是只有 GitHub 的 "Source code"。
+      - name: Package release bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+          name="xungen-${version}"
+          git archive --format=tar.gz --prefix="${name}/" -o "${name}.tar.gz" "$tag"
+          sha256sum "${name}.tar.gz" > "${name}.tar.gz.sha256"
+          gh release upload "$tag" "${name}.tar.gz" "${name}.tar.gz.sha256" --clobber
+          echo "已附加 ${name}.tar.gz（$(du -h "${name}.tar.gz" | cut -f1)）"
+
   smoke:
     name: Build + HTTP Smoke
     runs-on: ubuntu-latest

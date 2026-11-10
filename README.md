@@ -241,6 +241,17 @@ flowchart LR
 
 ## 🚀 快速开始
 
+> **这是一个自托管的服务端应用，不是手机 App，没有 `.apk` / `.exe` 安装包。**
+> 「下载最新版本」= 获取源码（或镜像）后在你自己的服务器/本机跑起来。三种方式任选其一：
+
+| 方式 | 命令 | 适用 |
+| --- | --- | --- |
+| **A. Git 克隆**（推荐，便于 `git pull` 升级） | `git clone https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans.git` | 本机开发、自有服务器 |
+| **B. 下载压缩包** | 打开 [Releases](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/latest) → `Assets` 下的 **Source code (zip)** | 不想用 git 的场景 |
+| **C. Docker 一键起** | 解压/克隆后 `docker compose up -d --build` | 有 Docker 的服务器 |
+
+想确认拿到的是最新版：`package.json` 的 `version` 应等于 [最新 Release](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/latest) 的 tag 去掉 `v`（当前 `0.2.1`）。
+
 **环境要求**：Node.js ≥ 22、pnpm 11（Corepack）。Windows / macOS / Linux 均可；Windows 优先用 PowerShell。
 
 ```powershell
