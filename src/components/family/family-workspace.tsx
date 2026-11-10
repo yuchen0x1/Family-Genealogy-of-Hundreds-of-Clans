@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import useSWR, { useSWRConfig } from "swr";
-import { ArrowLeft, Users, GitBranch, FileText, Lock, Globe, ShieldCheck, BookOpen, Network, ListTree, History, UserCog, Settings2, FolderArchive, ArrowLeftRight } from "lucide-react";
+import { ArrowLeft, Users, GitBranch, FileText, Lock, Globe, ShieldCheck, BookOpen, Network, ListTree, History, UserCog, Settings2, FolderArchive, ArrowLeftRight, BarChart3 } from "lucide-react";
 import { fetcher } from "@/lib/client";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, CardBody, EmptyState } from "@/components/ui/primitives";
@@ -17,9 +17,11 @@ import { CollaboratorPanel } from "@/components/family/collaborator-panel";
 import { SettingsPanel, type FamilyDetail } from "@/components/family/settings-panel";
 import { ArchivePanel } from "@/components/family/archive-panel";
 import { ImportExportPanel } from "@/components/family/import-export-panel";
+import { FamilyStatsPanel } from "@/components/family/family-stats-panel";
 
 const TABS = [
   { key: "graph", label: "关系图谱", icon: Network },
+  { key: "stats", label: "家族统计", icon: BarChart3 },
   { key: "people", label: "人物管理", icon: Users },
   { key: "relations", label: "关系管理", icon: ListTree },
   { key: "generations", label: "字辈与分支", icon: BookOpen },
@@ -129,6 +131,15 @@ export function FamilyWorkspace({ familyId }: { familyId: string }) {
               <p className="text-[11px] text-graphite">四种视图 · 按视野局部加载 · 仅已核实关系参与称谓计算</p>
             </div>
             <GenealogyGraph familyId={familyId} hasAccess={hasAccess} />
+          </div>
+        )}
+        {tab === "stats" && (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="font-serif text-lg font-semibold text-ink">家族统计</h2>
+              <p className="text-[11px] text-graphite">仅聚合数字 · 不展示任何人物姓名与联系方式</p>
+            </div>
+            <FamilyStatsPanel familyId={familyId} />
           </div>
         )}
         {tab === "people" && <PersonPanel familyId={familyId} familySurname={family.surnameText} canWrite={canWrite} onChanged={refresh} />}

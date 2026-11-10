@@ -91,6 +91,7 @@
 | GET,PATCH,DELETE | `/families/[id]/relationships/[relationId]` | 家族读/写 | 关系详情 / 核实状态 / 删除 |
 | GET | `/families/[id]/graph` | 家族读 | 按需局部加载，`up/down/focusPersonId`，节点上限 200 |
 | GET | `/families/[id]/kinship` | 家族读 | 亲属称谓；信息不足返回「无法确定」 |
+| GET | `/families/[id]/stats` | 家族读 | 家族统计聚合（人数/性别/世代/生卒年代/分支/字辈/核实状态/年龄分布）；只返回聚合数字，不含姓名与联系方式 |
 | GET,POST | `/families/[id]/generations` | 家族读/写 | 世代与字辈查询 / 显式录入（不自动推断） |
 | GET,POST | `/families/[id]/branches` | 家族读/写 | 分支列表 / 创建 |
 | POST | `/families/[id]/poems` | 家族写 | 字辈派语录入 |
