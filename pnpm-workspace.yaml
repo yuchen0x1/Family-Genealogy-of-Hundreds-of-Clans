@@ -8,5 +8,15 @@ allowBuilds:
 # next 15.x 固定依赖 postcss 8.4.31，该版本存在 sourceMappingURL 任意文件读取
 # 与 </style> 未转义两项 high 漏洞。上游 15.x 未跟进，此处强制统一到已修复的
 # 8.5.x（postcss 同主版本内向后兼容）。升 next 16 或等官方跟进后可移除。
+#
+# deepmerge-ts：@prisma/config@6 依赖 ^7，7.x 存在 CVE-2026-40345（递归对象合并
+# 栈耗尽）。8.x 已修复且保留 CJS 入口，此处跨主版本收口。等 prisma 稳定版跟进后可移除。
+#
+# minimatch 不做 override：@eslint/eslintrc@3.3.7 使用 `import minimatch from "minimatch"`
+# 的默认导入，而 minimatch 11 移除了 ESM 默认导出（改为命名导出），实测 eslint 启动即
+# 抛 SyntaxError: does not provide an export named 'default'。这是硬性不兼容，只能等
+# eslint / glob 上游跟进到支持 minimatch 11 的版本。该漏洞（CVE-2026-118764，glob
+# 模式放大 DoS）仅影响本地开发工具链且输入可信，暂接受。
 overrides:
   postcss: ^8.5.32
+  deepmerge-ts: ^8.0.2
