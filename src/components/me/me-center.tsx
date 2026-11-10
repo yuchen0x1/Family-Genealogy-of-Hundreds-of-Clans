@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge, Card, CardBody, CardHeader, Input, Textarea, EmptyState } from "@/components/ui/primitives";
 import { Field, Modal, Notice, parseError, formatDate, type NoticeData } from "@/components/family/shared";
 import { fetcher, apiRequest, type MeResponse } from "@/lib/client";
+import { UpdateBanner, useUpdateNotice } from "@/components/admin/update-notice";
 
 type Tab = "profile" | "security" | "notices" | "connections" | "data";
 
@@ -52,6 +53,8 @@ export function MeCenter({ initialTab }: { initialTab?: string }) {
   const { data: sessions, mutate: refreshSessions } = useSWR<Session[]>("/api/me/sessions", fetcher);
   const { data: noticeData, mutate: refreshNotices } = useSWR<{ items: NotificationItem[]; unread: number; total: number }>("/api/notifications?pageSize=20", fetcher);
   const { data: connections, mutate: refreshConnections } = useSWR<Connection[]>("/api/clan-connections", fetcher);
+  // 登录后落在个人中心，管理员在这里就能看到「有新版本」而不是必须去后台翻
+  const updateState = useUpdateNotice(Boolean(me?.user?.isAdmin));
 
   const [password, setPassword] = useState({ currentPassword: "", newPassword: "", confirm: "" });
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -168,6 +171,7 @@ export function MeCenter({ initialTab }: { initialTab?: string }) {
       </nav>
 
       <div className="min-w-0 space-y-4">
+        <UpdateBanner state={updateState} href="/admin" actionLabel="前往后台更新" />
         {notice && <Notice data={notice} onClose={() => setNotice(null)} />}
 
         <Card>

@@ -107,6 +107,7 @@ nginx/ docker/          Nginx 配置、自签证书生成脚本、数据库初�
 - **发布包校验**：流式检查 tar.gz 的路径穿越、链接/设备文件、校验和、体积与条目上限，并比对包内 `package.json` 版本与目标版本。
 - **任务互斥与自愈**：数据库唯一索引保证同一时刻只有一个活跃任务；进程被重启打断的任务在下次读取状态时自动收尾。
 - **发布流程**：`pnpm release patch|minor|major` 更新版本号与 CHANGELOG 并打 tag；推送 tag 后 CI 自动创建 GitHub Release（正文取 CHANGELOG 对应段落）。
+- **更新提醒**：管理员登录后进入个人中心或管理后台，若上游有新版本会直接看到提示条；后台侧边栏「系统设置」同时显示红点角标。提示按目标版本记忆关闭状态，新版本发布后会重新出现。
 
 配置项见 `.env.example`，Docker sidecar 与 systemd 两种部署形态的完整步骤见 `docs/DEPLOYMENT.md` 第 10、11 节。
 

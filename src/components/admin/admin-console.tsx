@@ -12,6 +12,7 @@ import { Badge, Card, CardBody, CardHeader, Input, Select, Textarea, EmptyState,
 import { Field, Modal, Notice, Pager, formatDate, parseError, type NoticeData } from "@/components/family/shared";
 import { fetcher, apiRequest, type MeResponse } from "@/lib/client";
 import { SystemUpdatePanel } from "@/components/admin/system-update-panel";
+import { UpdateBanner, UpdateDot, useUpdateNotice } from "@/components/admin/update-notice";
 
 type Tab = "overview" | "users" | "moderation" | "sources" | "audit" | "settings";
 const ALL_TABS: Array<{ key: Tab; label: string; icon: typeof LayoutDashboard; adminOnly?: boolean }> = [
@@ -39,38 +40,46 @@ function StatusBadge({ value }: { value: string }) {
 export function AdminConsole() {
   const { data: me, isLoading } = useSWR<MeResponse>("/api/auth/me", fetcher);
   const [tab, setTab] = useState<Tab>("overview");
+  // 更新提示只对管理员有意义，且必须在所有提前 return 之前调用（Hooks 顺序）
+  const isAdmin = Boolean(me?.user?.isAdmin);
+  const updateState = useUpdateNotice(isAdmin);
   if (isLoading) return <Loading />;
   if (!me?.authenticated) return <EmptyState title="请先登录" description="管理后台需要管理员账号。" action={<Link href="/login"><Button size="sm" variant="gold">前往登录</Button></Link>} />;
-  const isAdmin = Boolean(me.user?.isAdmin);
   const isReviewer = isAdmin || Boolean(me.user?.roles?.includes("moderator"));
   if (!isReviewer) return <EmptyState title="无权访问" description="此页面仅对管理员与内容审核人员开放。" action={<Link href="/"><Button size="sm" variant="outline">返回首页</Button></Link>} />;
   const tabs = ALL_TABS.filter((t) => !t.adminOnly || isAdmin);
+  const hasUpdate = Boolean(updateState?.updateAvailable);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[210px_minmax(0,1fr)]">
-      <nav className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
-        {tabs.map((t) => {
-          const Icon = t.icon;
-          return (
-            <button key={t.key} type="button" onClick={() => setTab(t.key)}
-              className={`flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-[13px] transition-colors ${tab === t.key ? "border-navy bg-navy text-white" : "border-line bg-white text-ink-soft hover:border-gold hover:text-ink"}`}>
-              <Icon className="h-4 w-4" />{t.label}
-            </button>
-          );
-        })}
-        <div className="mt-2 hidden rounded-lg border border-gold/40 bg-[#fbf7ee] p-3 text-[11px] leading-5 text-graphite lg:block">
-          <Lock className="mb-1 h-3.5 w-3.5 text-gold" />
-          后台只处理元数据与审核状态；私有族谱的人物明细、加密敏感字段与档案正文不会在此展示。
-        </div>
-      </nav>
+    <div className="space-y-4">
+      {/* 有新版本时直接提示，不必等管理员自己点开「系统设置 → 系统更新」 */}
+      <UpdateBanner state={updateState} onAction={() => setTab("settings")} actionLabel="查看更新" />
+      <div className="grid gap-6 lg:grid-cols-[210px_minmax(0,1fr)]">
+        <nav className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
+          {tabs.map((t) => {
+            const Icon = t.icon;
+            return (
+              <button key={t.key} type="button" onClick={() => setTab(t.key)}
+                className={`flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-[13px] transition-colors ${tab === t.key ? "border-navy bg-navy text-white" : "border-line bg-white text-ink-soft hover:border-gold hover:text-ink"}`}>
+                <Icon className="h-4 w-4" />{t.label}
+                {t.key === "settings" && hasUpdate && <UpdateDot />}
+              </button>
+            );
+          })}
+          <div className="mt-2 hidden rounded-lg border border-gold/40 bg-[#fbf7ee] p-3 text-[11px] leading-5 text-graphite lg:block">
+            <Lock className="mb-1 h-3.5 w-3.5 text-gold" />
+            后台只处理元数据与审核状态；私有族谱的人物明细、加密敏感字段与档案正文不会在此展示。
+          </div>
+        </nav>
 
-      <div className="min-w-0">
-        {tab === "overview" && <OverviewPanel />}
-        {tab === "users" && isAdmin && <UsersPanel />}
-        {tab === "moderation" && <ModerationPanel />}
-        {tab === "sources" && <SourcesPanel />}
-        {tab === "audit" && isAdmin && <AuditPanel />}
-        {tab === "settings" && isAdmin && <SettingsPanel />}
+        <div className="min-w-0">
+          {tab === "overview" && <OverviewPanel />}
+          {tab === "users" && isAdmin && <UsersPanel />}
+          {tab === "moderation" && <ModerationPanel />}
+          {tab === "sources" && <SourcesPanel />}
+          {tab === "audit" && isAdmin && <AuditPanel />}
+          {tab === "settings" && isAdmin && <SettingsPanel />}
+        </div>
       </div>
     </div>
   );
