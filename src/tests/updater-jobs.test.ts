@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { Prisma } from "@prisma/client";
 import { ApiError } from "@/lib/api";
+
+/** 「目标版本已生效」的判定依赖 package.json，这里取真实版本而不是写死某个号 */
+const PACKAGE_VERSION = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8")).version as string;
 
 const { updateJob, lstatMock, readFileMock } = vi.hoisted(() => ({
   updateJob: { create: vi.fn(), findMany: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
@@ -193,7 +198,7 @@ describe("更新任务生命周期", () => {
       id: "33333333-3333-4333-8333-333333333333",
       driver: "DOCKER",
       // 与 readLocalVersion() 读到的 package.json 版本一致，即「目标版本已生效」
-      targetVersion: "0.1.0",
+      targetVersion: PACKAGE_VERSION,
       stage: "RESTART",
       progress: 98,
     })]).mockResolvedValueOnce([]);

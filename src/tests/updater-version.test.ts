@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   __resetLocalVersionCache,
@@ -7,6 +9,9 @@ import {
   readLocalVersion,
   shortCommit,
 } from "@/lib/updater/version";
+
+/** 断言「读的是 package.json」，而不是断言某一个具体版本号——否则每次发版都要改测试 */
+const PACKAGE_VERSION = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8")).version as string;
 
 const originalEnv = {
   APP_VERSION: process.env.APP_VERSION,
@@ -56,7 +61,9 @@ describe("更新器版本归一化与比较", () => {
 
     const local = readLocalVersion();
     expect(local.source).toBe("package.json");
-    expect(local.version).toBe("0.1.0");
+    expect(local.version).toBe(PACKAGE_VERSION);
+    // 关键语义：环境变量 APP_VERSION 只是兜底，不能覆盖 package.json
+    expect(local.version).not.toBe("9.9.9");
     expect(local.commit).toBe("abcdef1234567890");
     expect(local.buildTime).toBe("2026-01-02T03:04:05Z");
   });
