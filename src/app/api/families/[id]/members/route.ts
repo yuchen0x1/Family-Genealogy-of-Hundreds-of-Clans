@@ -16,10 +16,29 @@ export const GET = route<Ctx>(async (req: NextRequest, ctx) => {
   const access = await assertFamilyRead(user, id);
   const { page, pageSize, params } = getQuery(req);
   const keyword = (params.get("keyword") || "").trim();
+  /**
+   * 关键词同时匹配姓、名、字号与别名。
+   *
+   * 旧实现只查 `givenName`，导致「按姓氏搜」（如输入「陈」）和「按字号搜」
+   * 都搜不到人——而这些正是族谱检索最常见的入口。这里用 OR 组合四个字段，
+   * 并统一 `mode: "insensitive"`，让拼音/拉丁字母的大小写不敏感。
+   *
+   * 性能：`given_name` 有 pg_trgm GIN 索引；新增迁移为 `surname_text`
+   * 也建同样的索引，避免按姓氏搜索退化为全表扫描。
+   */
   const where = {
     familyId: id,
     deletedAt: null,
-    ...(keyword ? { givenName: { contains: keyword } } : {}),
+    ...(keyword
+      ? {
+          OR: [
+            { givenName: { contains: keyword, mode: "insensitive" as const } },
+            { surnameText: { contains: keyword, mode: "insensitive" as const } },
+            { courtesyName: { contains: keyword, mode: "insensitive" as const } },
+            { alias: { contains: keyword, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
   };
   const [rows, total] = await Promise.all([
     prisma.familyMember.findMany({

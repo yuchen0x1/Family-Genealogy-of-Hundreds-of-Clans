@@ -83,7 +83,7 @@
 | --- | --- | --- | --- |
 | GET,POST | `/families` | 登录 | 可见族谱列表 / 创建族谱（默认 PRIVATE） |
 | GET,PATCH,DELETE | `/families/[id]` | 家族读/写/所有者 | 详情、设置更新、软删除 |
-| GET,POST | `/families/[id]/members` | 家族读/写 | 人物列表 / 新增（敏感字段 AES-256-GCM 加密） |
+| GET,POST | `/families/[id]/members` | 家族读/写 | 人物列表（`keyword` 同时匹配姓、名、字号、别名，大小写不敏感）/ 新增（敏感字段 AES-256-GCM 加密） |
 | GET | `/families/[id]/members/trash` | 家族写 | 回收站 |
 | GET,PATCH,DELETE | `/families/[id]/members/[memberId]` | 家族读/写 | 人物详情 / 编辑 / 软删除 |
 | POST | `/families/[id]/members/[memberId]/restore` | 家族写 | 恢复人物 |

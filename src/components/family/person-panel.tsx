@@ -182,7 +182,7 @@ export function PersonPanel({ familyId, familySurname, canWrite, onChanged }: {
         <div className="flex flex-wrap items-center gap-2">
           <form onSubmit={(e) => { e.preventDefault(); setQuery(keyword.trim()); setPage(1); }} className="relative">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-graphite" />
-            <Input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="按名字检索" className="h-9 w-40 pl-8 text-xs" />
+            <Input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="姓 / 名 / 字号 / 别名" className="h-9 w-44 pl-8 text-xs" title="同时匹配姓氏、名、字号与别名" />
           </form>
           {canWrite && <Button size="sm" variant="outline" onClick={() => setTrashOpen(true)}><RotateCcw className="h-3.5 w-3.5" />回收站</Button>}
           {canWrite && <Button size="sm" variant="gold" onClick={openCreate}><Plus className="h-3.5 w-3.5" />添加人物</Button>}
