@@ -289,6 +289,21 @@ async function main() {
   r = await request("POST", "/api/auth/login", { json: { email: C.email, password: "Community2026" }, as: "anon" });
   check("注销后原邮箱无法登录", r.status === 401 || r.status === 403, `实际 ${r.status}`);
 
+  // 本套用例会留下公开寻亲帖、FAMILY/PRIVATE 测试帖与一个私有族谱；
+  // 不清理会持续堆积在社区流与「我的族谱」里。
+  console.log("清理测试数据");
+  for (const [label, postId] of [
+    ["公开寻亲帖", publicPost],
+    ["家族可见帖", familyPost],
+    ["私密记录", privatePost],
+  ]) {
+    if (!postId) continue;
+    r = await request("DELETE", `/api/posts/${postId}`, { as: "a" });
+    check(`删除${label}`, r.status === 200, `实际 ${r.status}`);
+  }
+  r = await request("DELETE", `/api/families/${familyA}`, { as: "a" });
+  check("软删除测试族谱", r.status === 200, `实际 ${r.status}`);
+
   console.log(`\n[smoke-community] 通过 ${passed} 项，失败 ${failed} 项\n`);
   if (failed) process.exit(1);
 }

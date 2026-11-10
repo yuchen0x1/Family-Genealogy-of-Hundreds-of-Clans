@@ -193,6 +193,11 @@ async function main() {
   r = await call("PATCH", `/api/families/${familyId}`, { visibility: "PRIVATE" });
   check("可改回私有", r.data?.visibility === "PRIVATE");
 
+  // 软删除本次创建的测试族谱，避免长期堆积在「我的族谱」里（可由所有者恢复）。
+  console.log("清理测试数据");
+  r = await call("DELETE", `/api/families/${familyId}`);
+  check("软删除测试族谱", r.okStatus, JSON.stringify(r.body));
+
   console.log(`\n[smoke-ui] 通过 ${passed} 项，失败 ${failed} 项\n`);
   if (failed > 0) process.exit(1);
 }

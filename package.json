@@ -33,6 +33,7 @@
     "test:perf": "node scripts/perf-check.mjs",
     "test:backup": "node --test scripts/storage-snapshot.test.mjs",
     "test:reset-limits": "node scripts/reset-rate-limits.mjs",
+    "test:cleanup": "node scripts/cleanup-test-data.mjs --apply",
     "test:e2e": "playwright test"
   },
   "prisma": {

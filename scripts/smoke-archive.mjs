@@ -311,6 +311,14 @@ async function main() {
   const page = await request("GET", `/families/${familyId}`, { anonymous: true });
   check("族谱详情页（含档案/导入导出面板）返回 200", page.status === 200, `实际 ${page.status}`);
 
+  // 本套用例为验证匿名可见性把族谱切成了 PUBLIC，若不恢复会永久污染公开族谱列表。
+  // 先改回 PRIVATE，再软删除（可由所有者恢复），保证每次运行后站点状态回到原样。
+  console.log("11) 清理测试数据");
+  r = await call("PATCH", base, { visibility: "PRIVATE" });
+  check("测试族谱恢复为私有", r.okStatus, JSON.stringify(r.body));
+  r = await call("DELETE", base);
+  check("测试族谱软删除", r.okStatus, JSON.stringify(r.body));
+
   console.log(`\n[smoke-archive] 通过 ${passed} 项，失败 ${failed} 项\n`);
   if (failed) process.exit(1);
 }

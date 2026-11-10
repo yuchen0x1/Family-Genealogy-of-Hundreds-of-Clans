@@ -214,6 +214,11 @@ async function main() {
     JSON.stringify(r.body).slice(0, 240),
   );
 
+  // 软删除本次创建的测试族谱，避免长期堆积（可由所有者恢复）。
+  console.log("清理测试数据");
+  r = await request("DELETE", `/api/families/${privateFamily}`, { as: "user" });
+  check("软删除测试族谱", r.status === 200, `实际 ${r.status}`);
+
   console.log(`\n[smoke-admin] 通过 ${passed} 项，失败 ${failed} 项\n`);
   if (failed) process.exit(1);
 }

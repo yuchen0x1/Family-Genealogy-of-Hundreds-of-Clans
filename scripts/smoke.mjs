@@ -121,6 +121,11 @@ async function main() {
   check("匿名访问私有图谱被拒", r.status === 403, `status=${r.status}`);
   cookie = savedCookie;
 
+  // 软删除本次创建的测试族谱，避免长期堆积在「我的族谱」里（可由所有者恢复）。
+  console.log("清理测试数据");
+  r = await call("DELETE", `/api/families/${familyId}`);
+  check("软删除测试族谱", r.status === 200, `status=${r.status}`);
+
   console.log(`\n[smoke] 通过 ${passed} 项，失败 ${failed} 项\n`);
   if (failed > 0) process.exit(1);
 }
