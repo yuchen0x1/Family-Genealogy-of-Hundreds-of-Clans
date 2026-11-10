@@ -13,7 +13,7 @@ import type { ParsedPerson, ParsedRelation } from "@/lib/genealogy-io";
 type Ctx = { id: string; jobId: string };
 
 const schema = z.object({
-  confirm: z.literal("IMPORT", { errorMap: () => ({ message: "导入需显式确认" }) }),
+  confirm: z.literal("IMPORT", { error: "导入需显式确认" }),
   /** 报告中标注为重复/需跳过的人物行号（1-based），由用户勾选 */
   skipRows: z.array(z.number().int().min(1)).max(5000).optional(),
 });

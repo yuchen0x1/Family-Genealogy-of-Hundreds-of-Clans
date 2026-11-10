@@ -12,7 +12,7 @@ export const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   displayName: z.string().trim().min(1, "请填写昵称").max(100),
-  agreeTerms: z.literal(true, { errorMap: () => ({ message: "需同意用户协议与隐私政策" }) }),
+  agreeTerms: z.literal(true, { error: "需同意用户协议与隐私政策" }),
 });
 
 export const loginSchema = z.object({
@@ -25,7 +25,7 @@ export const profileUpdateSchema = z.object({
   bio: z.string().max(1000).optional().nullable(),
   surname: z.string().max(20).optional().nullable(),
   location: z.string().max(200).optional().nullable(),
-  privacySettings: z.record(z.union([z.boolean(), z.string(), z.number()])).optional(),
+  privacySettings: z.record(z.string(), z.union([z.boolean(), z.string(), z.number()])).optional(),
 });
 
 export const familyCreateSchema = z.object({
@@ -97,7 +97,7 @@ export const postCreateSchema = z.object({
   type: z.enum(["SEEK_RELATIVE", "DISCUSSION", "ANNOUNCEMENT", "EVENT", "FAMILY_NEWS", "CORRECTION"]).default("DISCUSSION"),
   familyId: z.string().uuid().optional().nullable(),
   surnameId: z.string().uuid().optional().nullable(),
-  clues: z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
+  clues: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
   visibility: z.enum(["PRIVATE", "FAMILY", "PUBLIC"]).default("PUBLIC"),
   tags: z.array(z.string().max(30)).max(10).optional(),
 });
