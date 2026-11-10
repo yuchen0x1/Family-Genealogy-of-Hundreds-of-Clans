@@ -72,7 +72,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       </div>
       {mode === "login" && (
         <div className="rounded-md border border-line bg-cream px-3 py-2 text-[11px] leading-5 text-graphite">
-          演示账号：<code className="text-navy">demo@xungen.local</code> / <code className="text-navy">Demo_Xungen_2026</code>（仅用于体验演示族谱）
+          本机开发可用演示账号 <code className="text-navy">demo@xungen.local</code>（口令见
+          <code className="text-navy"> prisma/seed.ts</code>，仅用于体验演示族谱）。正式部署请勿保留演示数据。
         </div>
       )}
     </form>

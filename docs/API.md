@@ -189,8 +189,9 @@
 
 ```bash
 # 登录并保存 Cookie
+# 口令来自本地 seed（见 prisma/seed.ts），文档不公开具体值
 curl -c cookies.txt -H 'Content-Type: application/json' -H 'Origin: http://localhost:3000' \
-  -d '{"email":"demo@xungen.local","password":"Demo_Xungen_2026"}' \
+  -d '{"email":"demo@xungen.local","password":"<本地演示口令>"}' \
   http://localhost:3000/api/auth/login
 
 # 创建私有族谱

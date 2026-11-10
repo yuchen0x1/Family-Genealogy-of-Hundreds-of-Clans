@@ -113,7 +113,7 @@ pnpm db:migrate && pnpm db:seed
 pnpm dev
 ```
 
-A public demo family (clearly marked, fictional) is seeded for exploring the UI. Demo account for local development only: `demo@xungen.local` / `Demo_Xungen_2026`. The seeded admin account must be changed or disabled immediately in production (see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md), section 9).
+A public demo family (clearly marked, fictional) is seeded for exploring the UI. The local development demo account is `demo@xungen.local`; its password is defined in `prisma/seed.ts` and is **never** published here. The seeded admin account is created from `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` and must be changed or disabled immediately in production (see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md), section 9).
 
 Docker:
 

@@ -236,7 +236,7 @@ flowchart LR
 | 数据库 | PostgreSQL 17、Prisma 6.19（48 model / 6 迁移）、`pg_trgm` + 中文 2-gram + 拼音检索键 |
 | 缓存 | Redis（ioredis，未连接自动降级进程内缓存/限流） |
 | 存储 | 本地非公开目录（默认）/ S3 兼容对象存储（需配置凭据） |
-| 测试 | Vitest（20 文件 / 225 项）、5 套 HTTP 冒烟（314 项）、Playwright E2E（11 项）、安全审计 42 项、性能基线 |
+| 测试 | Vitest（20 文件 / 225 项）、5 套 HTTP 冒烟（323 项）、Playwright E2E（11 项）、安全审计 42 项、性能基线 |
 | 部署 | Dockerfile、docker-compose（app + nginx + postgres + redis + updater sidecar）、Nginx TLS 终止、systemd 单元 |
 
 ## 🚀 快速开始
@@ -274,8 +274,10 @@ Redis 为可选：本机有 `redis-server` 自动连接，否则降级为进程�
 
 **体验演示数据**：seed 自带公开演示族谱「【演示】颍川陈氏·示例族谱」（人物、关系、字辈均为虚构并明确标注）。演示账号仅用于本地开发：
 
-> 普通用户 `demo@xungen.local` / `Demo_Xungen_2026`（登录页也有展示）
-> 管理员账号由 seed 创建于本地开发环境，**生产部署后必须立即改密或禁用**（步骤见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) 第 9 节），本文档不公开生产口令。
+> 普通用户账号 `demo@xungen.local`，初始口令由 `prisma/seed.ts` 写入，**仅用于本地开发体验**。
+> 管理员账号由 `.env` 的 `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` 创建，
+> **生产部署后必须立即改密或禁用**（步骤见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) 第 9 节）。
+> 本文档不公开任何可用口令——请在本机 `.env` 或 seed 脚本中查看。
 
 **Docker 部署**（app + nginx + postgres + redis + 更新 sidecar）：
 
@@ -291,7 +293,7 @@ docker compose up -d --build
 | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | 用户操作说明（建谱、人物、关系、档案、社区） |
 | [docs/API.md](docs/API.md) | 全部 API、权限模型与错误码 |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | 部署、HTTPS、备份恢复、升级与在线更新排障 |
-| [docs/TEST_REPORT.md](docs/TEST_REPORT.md) | 2026-11-10 发布轮实测：592 项自动化断言全绿 |
+| [docs/TEST_REPORT.md](docs/TEST_REPORT.md) | 2026-11-10 发布轮实测：601 项自动化断言全绿 |
 | [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) | 安全设计、42 项审计结果与遗留项论证 |
 | [docs/COMPLETION.md](docs/COMPLETION.md) | 已实现 / 未验证 / 未完成清单（不伪造成功） |
 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
@@ -304,24 +306,25 @@ docker compose up -d --build
 pnpm typecheck            # TypeScript 严格模式
 pnpm lint                 # ESLint
 pnpm test                 # Vitest 单元测试（20 文件 / 225 项）
-pnpm test:smoke           # 核心后端 HTTP 冒烟（27）
-pnpm test:smoke:ui        # 族谱前端依赖接口（54）
-pnpm test:smoke:archive   # 档案中心 + 导入导出（71）
-pnpm test:smoke:community # 社区 + 用户中心（89）
-pnpm test:smoke:admin     # 管理后台 + 隐私边界（73）
+pnpm test:smoke           # 核心后端 HTTP 冒烟（28）
+pnpm test:smoke:ui        # 族谱前端依赖接口（55）
+pnpm test:smoke:archive   # 档案中心 + 导入导出（73）
+pnpm test:smoke:community # 社区 + 用户中心（93）
+pnpm test:smoke:admin     # 管理后台 + 隐私边界（74）
 pnpm test:e2e             # Playwright 桌面 8 + 移动 3
 pnpm test:security        # 真实 HTTP 安全审计（42）
 pnpm test:perf            # 性能基线 → reports/perf-report.json
 pnpm db:backup            # 备份演练（数据 + 上传文件双通道）
 pnpm test:reset-limits    # 清理限流计数（连续跑测试之间执行）
+pnpm test:cleanup         # 软删除冒烟/E2E 留下的测试族谱与帖子（可恢复）
 ```
 
 2026-11-10 发布轮实测汇总（生产构建实例，全部真实执行，详见 [docs/TEST_REPORT.md](docs/TEST_REPORT.md)）：
 
 | 类别 | 结果 |
 | --- | --- |
-| 自动化断言合计 | **592 项，0 失败**（225 单测 + 314 冒烟 + 42 安全审计 + 11 E2E） |
-| 生产构建 | 91 条路由（10 静态 + 81 动态）/ 20 页面 |
+| 自动化断言合计 | **601 项，0 失败**（225 单测 + 323 冒烟 + 42 安全审计 + 11 E2E） |
+| 生产构建 | 92 条路由（52 静态 / 40 动态：68 个 API + 20 个页面 + robots/sitemap） |
 | 备份恢复演练 | 48 表 / 4369 行快照 → 影子库恢复行数独立核对一致 |
 | 性能基线 | 11 端点 p95 ≤ 21ms；60 并发 0 失败；异常端点 0 |
 

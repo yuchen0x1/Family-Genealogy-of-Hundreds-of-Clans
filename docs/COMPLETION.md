@@ -125,7 +125,7 @@
 
 ## 8. 2026-11-10 发布轮（v0.2.0）
 
-全部经 `pnpm lint`、`pnpm typecheck`、`pnpm test`（20 文件 / 225 通过 + 2 跳过）、5 套冒烟（314 项）、安全审计（42/42）、Playwright E2E（11 项）、`pnpm build`（91 条路由）与备份恢复演练（48 表 / 4369 行）复验；以 `v0.2.0` tag 发布，CI 自动创建 GitHub Release。
+全部经 `pnpm lint`、`pnpm typecheck`、`pnpm test`（20 文件 / 225 通过 + 2 跳过）、5 套冒烟（323 项）、安全审计（42/42）、Playwright E2E（11 项）、`pnpm build`（92 条路由）与备份恢复演练（48 表 / 4369 行）复验；以 `v0.2.0` tag 发布，CI 自动创建 GitHub Release。
 
 - **在线更新**：自托管实例后台检查上游版本、查看更新日志、一键升级（SOURCE/DOCKER/SIMULATE 三驱动、强制备份、发布包流式安全校验、任务落库互斥与自愈）；更新提醒（后台角标 + 登录后提示条）。
 - **发布工具链**：`pnpm release` + CI tag 自动发布 + 构建版本注入（`APP_VERSION` / `APP_BUILD_SHA`）。

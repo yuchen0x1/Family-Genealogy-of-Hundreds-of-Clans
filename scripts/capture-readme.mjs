@@ -39,7 +39,9 @@ const USER_TARGETS = [
   { name: "surnames", url: "/surnames" },
   { name: "surname-detail", url: `/surnames/${encodeURIComponent("陈")}` },
   { name: "migration", url: "/roots" },
-  { name: "families", url: "/families", typeInto: { placeholder: "按家族名称检索", text: "演示" } },
+  // 数据已由 scripts/cleanup-test-data.mjs 清理，这里直接展示公开列表；
+  // 若本机又跑过冒烟/E2E，先执行 `pnpm test:cleanup` 再重跑本脚本。
+  { name: "families", url: "/families" },
   { name: "genealogy", url: `/families/${DEMO_FAMILY_ID}` },
   { name: "family-stats", url: `/families/${DEMO_FAMILY_ID}#tab=stats` },
   { name: "people", url: `/families/${DEMO_FAMILY_ID}#tab=people` },
@@ -47,11 +49,8 @@ const USER_TARGETS = [
   { name: "generations", url: `/families/${DEMO_FAMILY_ID}#tab=generations` },
   { name: "archive", url: `/families/${DEMO_FAMILY_ID}#tab=archive` },
   { name: "import-export", url: `/families/${DEMO_FAMILY_ID}#tab=io` },
-  {
-    name: "community",
-    url: "/community",
-    typeInto: { placeholder: "搜索寻亲线索、讨论内容或标签", text: "演示" },
-  },
+  // 同上：社区流在清理后只剩演示帖，直接截取自然列表
+  { name: "community", url: "/community" },
   { name: "me", url: "/me" },
   { name: "guide", url: "/guide" },
 ];
