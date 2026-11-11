@@ -1,0 +1,156 @@
+@import "tailwindcss";
+
+/* ============================================================
+   中华寻根 · 百家族谱 设计系统
+   现代科技感 + 中华传统文化 + 高级数字档案馆
+   ============================================================ */
+
+@theme {
+  --color-ink: #191b1d;
+  --color-ink-soft: #2b2f33;
+  --color-navy: #1b2a41;
+  --color-navy-light: #2c4060;
+  --color-gold: #b08d57;
+  --color-gold-light: #d8bd8b;
+  --color-cream: #f7f5ef;
+  --color-cream-dark: #ece8dd;
+  --color-jade: #3e6b6b;
+  --color-cinnabar: #a63d2f;
+  --color-graphite: #5a6069;
+  --color-line: #e2ddd0;
+
+  --font-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", Georgia, serif;
+  --font-sans: "Inter", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+
+  --shadow-paper: 0 1px 2px rgb(25 27 29 / 4%), 0 8px 28px rgb(25 27 29 / 6%);
+  --shadow-lift: 0 4px 12px rgb(25 27 29 / 8%), 0 18px 50px rgb(25 27 29 / 10%);
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-gold-light);
+  color: var(--color-ink);
+}
+
+/* 纸纹与淡淡网格：数字档案馆质感 */
+.paper-bg {
+  background-color: var(--color-cream);
+  background-image:
+    radial-gradient(circle at 12% 18%, rgb(176 141 87 / 7%) 0, transparent 38%),
+    radial-gradient(circle at 88% 8%, rgb(62 107 107 / 6%) 0, transparent 34%),
+    linear-gradient(rgb(27 42 65 / 2.5%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(27 42 65 / 2.5%) 1px, transparent 1px);
+  background-size: auto, auto, 42px 42px, 42px 42px;
+}
+
+.ink-bg {
+  background-color: var(--color-navy);
+  background-image:
+    radial-gradient(circle at 78% 22%, rgb(176 141 87 / 18%) 0, transparent 42%),
+    radial-gradient(circle at 12% 82%, rgb(62 107 107 / 22%) 0, transparent 46%),
+    linear-gradient(rgb(255 255 255 / 3%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 3%) 1px, transparent 1px);
+  background-size: auto, auto, 56px 56px, 56px 56px;
+}
+
+.gold-rule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+}
+
+.card-hover {
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 220ms ease, border-color 220ms ease;
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lift);
+  border-color: var(--color-gold-light);
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fade-up 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.delay-1 { animation-delay: 0.08s; }
+.delay-2 { animation-delay: 0.16s; }
+.delay-3 { animation-delay: 0.24s; }
+.delay-4 { animation-delay: 0.32s; }
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #e9e5da 25%, #f3f0e8 50%, #e9e5da 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+@keyframes draw-line {
+  from { stroke-dashoffset: 1000; }
+  to { stroke-dashoffset: 0; }
+}
+.route-animate {
+  stroke-dasharray: 1000;
+  animation: draw-line 2.4s ease-out forwards;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--color-cream-dark); }
+::-webkit-scrollbar-thumb { background: #c9c2b2; border-radius: 8px; border: 2px solid var(--color-cream-dark); }
+::-webkit-scrollbar-thumb:hover { background: var(--color-gold); }
+
+/* 表格与表单基础 */
+input, textarea, select, button { font: inherit; }
+input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+/* 键盘用户可直接跳过固定顶栏，进入页面主要内容。 */
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 0.75rem;
+  z-index: 100;
+  transform: translateY(-180%);
+  border-radius: 0.375rem;
+  background: var(--color-navy);
+  color: white;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-lift);
+  transition: transform 160ms ease;
+}
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+/* 图谱画布 */
+.graph-canvas { touch-action: none; user-select: none; }
+.graph-grid {
+  background-image: radial-gradient(rgb(27 42 65 / 12%) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

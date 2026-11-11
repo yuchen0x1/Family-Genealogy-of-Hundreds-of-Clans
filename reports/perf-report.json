@@ -1,0 +1,182 @@
+{
+  "generatedAt": "2026-11-10T13:22:50.440Z",
+  "baseUrl": "http://localhost:3000",
+  "environment": "本地开发单实例（Next.js dev + 本地 PostgreSQL 17 + Redis）",
+  "warmup": {
+    "endpoints": 11,
+    "note": "每个端点预热 1 次，排除 dev 模式首次按需编译耗时；统计只含稳态请求。"
+  },
+  "thresholds": {
+    "sequentialP95Ms": 5000,
+    "graphNodeCap": 200
+  },
+  "sequential": [
+    {
+      "label": "首页",
+      "url": "/",
+      "ok": true,
+      "count": 3,
+      "min": 14,
+      "p50": 19,
+      "p95": 21,
+      "max": 21,
+      "avg": 18
+    },
+    {
+      "label": "姓氏列表",
+      "url": "/surnames",
+      "ok": true,
+      "count": 3,
+      "min": 12,
+      "p50": 16,
+      "p95": 20,
+      "max": 20,
+      "avg": 16
+    },
+    {
+      "label": "姓氏详情",
+      "url": "/surnames/%E6%9D%8E",
+      "ok": true,
+      "count": 3,
+      "min": 9,
+      "p50": 13,
+      "p95": 21,
+      "max": 21,
+      "avg": 14
+    },
+    {
+      "label": "历史寻根",
+      "url": "/roots",
+      "ok": true,
+      "count": 3,
+      "min": 7,
+      "p50": 7,
+      "p95": 9,
+      "max": 9,
+      "avg": 8
+    },
+    {
+      "label": "族谱中心",
+      "url": "/families",
+      "ok": true,
+      "count": 3,
+      "min": 10,
+      "p50": 13,
+      "p95": 14,
+      "max": 14,
+      "avg": 12
+    },
+    {
+      "label": "宗亲社区",
+      "url": "/community",
+      "ok": true,
+      "count": 3,
+      "min": 13,
+      "p50": 15,
+      "p95": 15,
+      "max": 15,
+      "avg": 14
+    },
+    {
+      "label": "统一搜索 API",
+      "url": "/api/search?q=%E9%99%88",
+      "ok": true,
+      "count": 3,
+      "min": 14,
+      "p50": 15,
+      "p95": 15,
+      "max": 15,
+      "avg": 15
+    },
+    {
+      "label": "姓氏 API",
+      "url": "/api/surnames?pageSize=20",
+      "ok": true,
+      "count": 3,
+      "min": 15,
+      "p50": 15,
+      "p95": 15,
+      "max": 15,
+      "avg": 15
+    },
+    {
+      "label": "地名 API",
+      "url": "/api/places",
+      "ok": true,
+      "count": 3,
+      "min": 5,
+      "p50": 15,
+      "p95": 18,
+      "max": 18,
+      "avg": 13
+    },
+    {
+      "label": "迁徙 API",
+      "url": "/api/migrations",
+      "ok": true,
+      "count": 3,
+      "min": 11,
+      "p50": 14,
+      "p95": 16,
+      "max": 16,
+      "avg": 14
+    },
+    {
+      "label": "帖子流 API",
+      "url": "/api/posts?pageSize=12",
+      "ok": true,
+      "count": 3,
+      "min": 5,
+      "p50": 11,
+      "p95": 16,
+      "max": 16,
+      "avg": 11
+    }
+  ],
+  "concurrent": {
+    "count": 60,
+    "min": 6,
+    "p50": 24,
+    "p95": 52,
+    "max": 54,
+    "avg": 25,
+    "total": 60,
+    "failed": 0
+  },
+  "graphLimit": {
+    "status": 200,
+    "ms": 16,
+    "nodes": 1,
+    "edges": 0,
+    "cap": 200,
+    "withinCap": true
+  },
+  "exportTimes": [
+    {
+      "format": "JSON",
+      "status": 403,
+      "ms": 18
+    },
+    {
+      "format": "GEDCOM551",
+      "status": 403,
+      "ms": 14
+    },
+    {
+      "format": "SVG",
+      "status": 403,
+      "ms": 16
+    },
+    {
+      "format": "PNG",
+      "status": 403,
+      "ms": 16
+    },
+    {
+      "format": "PDF",
+      "status": 403,
+      "ms": 15
+    }
+  ],
+  "note": "开发机基线：预热后统计，仍为 dev 模式，生产需以 next build + next start 重新测量。图谱样本为 seed 公开族谱（节点数少），局部加载上限由服务端 buildPartialGraph 的 MAX_GRAPH_NODES=200 控制，不以单次样本节点数作为上限验证。"
+}

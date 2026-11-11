@@ -1,0 +1,272 @@
+{
+  "generatedAt": "2026-11-10T13:22:40.160Z",
+  "baseUrl": "http://localhost:3000",
+  "summary": {
+    "total": 42,
+    "passed": 42,
+    "failed": 0,
+    "warnings": 1
+  },
+  "results": [
+    {
+      "category": "headers",
+      "name": "X-Content-Type-Options: nosniff",
+      "ok": true,
+      "detail": "nosniff"
+    },
+    {
+      "category": "headers",
+      "name": "X-Frame-Options 防点击劫持",
+      "ok": true,
+      "detail": "SAMEORIGIN"
+    },
+    {
+      "category": "headers",
+      "name": "Referrer-Policy 存在",
+      "ok": true,
+      "detail": "strict-origin-when-cross-origin"
+    },
+    {
+      "category": "headers",
+      "name": "Permissions-Policy 存在",
+      "ok": true,
+      "detail": "camera=(), microphone=(), geolocation=(), payment=()"
+    },
+    {
+      "category": "headers",
+      "name": "CSP 策略存在且限制脚本来源",
+      "ok": true,
+      "detail": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connec"
+    },
+    {
+      "category": "headers",
+      "name": "不暴露 X-Powered-By",
+      "ok": true,
+      "detail": "null"
+    },
+    {
+      "category": "auth",
+      "name": "弱密码注册被拒",
+      "ok": true,
+      "detail": "状态 422"
+    },
+    {
+      "category": "auth",
+      "name": "合规密码注册成功",
+      "ok": true,
+      "detail": "状态 201 / "
+    },
+    {
+      "category": "auth",
+      "name": "会话 Cookie 为 HttpOnly",
+      "ok": true,
+      "detail": "xungen_session=2_wDi4Z2rJM3eHhHr6cbBi27D4pQDSJlu7rWBU-Rd0o; Path=/; Expires=Thu, 10 Dec 2026 13:22:39 GMT; Secure; HttpOnly; SameSite=lax"
+    },
+    {
+      "category": "auth",
+      "name": "会话 Cookie 设置 SameSite",
+      "ok": true,
+      "detail": "xungen_session=2_wDi4Z2rJM3eHhHr6cbBi27D4pQDSJlu7rWBU-Rd0o; Path=/; Expires=Thu, 10 Dec 2026 13:22:39 GMT; Secure; HttpOnly; SameSite=lax"
+    },
+    {
+      "category": "auth",
+      "name": "会话 Cookie 限定 Path=/",
+      "ok": true,
+      "detail": "xungen_session=2_wDi4Z2rJM3eHhHr6cbBi27D4pQDSJlu7rWBU-Rd0o; Path=/; Expires=Thu, 10 Dec 2026 13:22:39 GMT; Secure; HttpOnly; SameSite=lax"
+    },
+    {
+      "category": "auth",
+      "name": "响应体不返回会话令牌原文",
+      "ok": true,
+      "detail": "{\"ok\":true,\"data\":{\"id\":\"50a03968-9af4-4026-abce-ca0d8d5bdbdc\",\"email\":\"sec_1794316959005@xungen.local\",\"displayName\":\"安全审计\"}}"
+    },
+    {
+      "category": "auth",
+      "name": "当前用户接口不返回密码哈希",
+      "ok": true,
+      "detail": "{\"ok\":true,\"data\":{\"authenticated\":true,\"user\":{\"id\":\"50a03968-9af4-4026-abce-ca0d8d5bdbdc\",\"email\":\"sec_1794316959005@xungen.local\",\"displayName\":\"安全审计\",\"roles\":[\"user\"],\"permissions\":[\"document:uplo"
+    },
+    {
+      "category": "csrf",
+      "name": "跨站 Origin 的写请求被拒",
+      "ok": true,
+      "detail": "状态 403 / CSRF_REJECTED"
+    },
+    {
+      "category": "privacy",
+      "name": "创建私有族谱成功",
+      "ok": true,
+      "detail": "状态 201 / "
+    },
+    {
+      "category": "privacy",
+      "name": "创建加密敏感字段的人物",
+      "ok": true,
+      "detail": "状态 201 / "
+    },
+    {
+      "category": "privacy",
+      "name": "匿名访问 84710880-966c-4f07-8ded-5735479d96d4/members 被拒",
+      "ok": true,
+      "detail": "状态 403"
+    },
+    {
+      "category": "privacy",
+      "name": "匿名访问 84710880-966c-4f07-8ded-5735479d96d4 被拒",
+      "ok": true,
+      "detail": "状态 403"
+    },
+    {
+      "category": "privacy",
+      "name": "匿名访问 84710880-966c-4f07-8ded-5735479d96d4/graph 被拒",
+      "ok": true,
+      "detail": "状态 403"
+    },
+    {
+      "category": "privacy",
+      "name": "匿名访问 84710880-966c-4f07-8ded-5735479d96d4/export?format=JSON 被拒",
+      "ok": true,
+      "detail": "状态 403"
+    },
+    {
+      "category": "privacy",
+      "name": "匿名访问 84710880-966c-4f07-8ded-5735479d96d4/documents 被拒",
+      "ok": true,
+      "detail": "状态 403"
+    },
+    {
+      "category": "privacy",
+      "name": "普通用户访问 /api/admin/overview 被拒",
+      "ok": true,
+      "detail": "状态 403"
+    },
+    {
+      "category": "privacy",
+      "name": "普通用户访问 /api/admin/users 被拒",
+      "ok": true,
+      "detail": "状态 403"
+    },
+    {
+      "category": "privacy",
+      "name": "普通用户访问 /api/admin/settings 被拒",
+      "ok": true,
+      "detail": "状态 403"
+    },
+    {
+      "category": "privacy",
+      "name": "普通用户访问 /api/admin/audit-logs 被拒",
+      "ok": true,
+      "detail": "状态 403"
+    },
+    {
+      "category": "privacy",
+      "name": "人物列表不返回加密敏感字段",
+      "ok": true,
+      "detail": "状态 200 / {\"items\":[{\"id\":\"6ba91132-c46f-4bbf-92a3-35b827b96939\",\"name\":\"陈隐私人物\",\"surnameText\":\"陈\",\"givenName\":\"隐私人物\",\"gender\":\"UNKNOWN\",\"isLiving\":false,\"visibility\":\"PRIVATE\",\"birthDateText\":null,\"birthYear\":n"
+    },
+    {
+      "category": "privacy",
+      "name": "匿名全站搜索不泄露私有族谱人物",
+      "ok": true,
+      "detail": "状态 200 命中 0 条"
+    },
+    {
+      "category": "xss",
+      "name": "含脚本标签的内容可提交（由前端转义，不做静默篡改）",
+      "ok": true,
+      "detail": "状态 201 / "
+    },
+    {
+      "category": "xss",
+      "name": "服务端渲染 HTML 不含可执行脚本标签",
+      "ok": true,
+      "detail": "页面长度检查"
+    },
+    {
+      "category": "sql-injection",
+      "name": "SQL 注入式查询不报错、不返回额外数据",
+      "ok": true,
+      "detail": "状态 200 命中 0"
+    },
+    {
+      "category": "sql-injection",
+      "name": "姓氏查询参数化，不泄露用户表数据",
+      "ok": true,
+      "detail": "状态 200"
+    },
+    {
+      "category": "xss",
+      "name": "搜索接口不回显可执行脚本",
+      "ok": true,
+      "detail": "状态 200"
+    },
+    {
+      "category": "upload",
+      "name": "伪装 PNG 被拒绝（MAGIC_MISMATCH）",
+      "ok": true,
+      "detail": "状态 400 / MAGIC_MISMATCH"
+    },
+    {
+      "category": "upload",
+      "name": "可执行扩展名 被拒绝（UNSUPPORTED_FILE_TYPE）",
+      "ok": true,
+      "detail": "状态 400 / UNSUPPORTED_FILE_TYPE"
+    },
+    {
+      "category": "upload",
+      "name": "MIME 不符 被拒绝（MIME_MISMATCH）",
+      "ok": true,
+      "detail": "状态 400 / MIME_MISMATCH"
+    },
+    {
+      "category": "upload",
+      "name": "下载接口不因路径穿越读取任意文件",
+      "ok": true,
+      "detail": "状态 404 / NOT_FOUND"
+    },
+    {
+      "category": "auth",
+      "name": "锁定测试账号已创建",
+      "ok": true,
+      "detail": "状态 201"
+    },
+    {
+      "category": "auth",
+      "name": "连续错误登录触发账号锁定",
+      "ok": true,
+      "detail": "已触发"
+    },
+    {
+      "category": "auth",
+      "name": "锁定期间即使密码正确也无法登录",
+      "ok": true,
+      "detail": "状态 423"
+    },
+    {
+      "category": "auth",
+      "name": "退出登录成功",
+      "ok": true,
+      "detail": "状态 200"
+    },
+    {
+      "category": "auth",
+      "name": "退出后会话立即失效",
+      "ok": true,
+      "detail": "{\"authenticated\":false,\"user\":null}"
+    },
+    {
+      "category": "rate-limit",
+      "name": "注册接口触发频率限制",
+      "ok": true,
+      "detail": "12 次中命中 7 次 429"
+    }
+  ],
+  "warnings": [
+    {
+      "category": "headers",
+      "name": "CSP 含宽松指令（已知遗留项，待 nonce/hash 化）",
+      "detail": "检测到 unsafe-inline, unsafe-eval；移除前须先收敛 inline script 与运行时依赖"
+    }
+  ],
+  "note": "本报告由真实 HTTP 请求生成。warnings 为已知遗留项的可观测护栏，不计入 passed/failed。外部依赖（S3、外部 OCR、HTTPS 证书、WAF、独立渗透测试、生产 CDN）不在本脚本覆盖范围，需在生产部署时另行验收。运行前建议执行 pnpm test:reset-limits 清理开发期限流计数。"
+}

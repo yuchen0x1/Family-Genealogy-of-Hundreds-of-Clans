@@ -1,0 +1,18 @@
+{
+  "generatedAt": "2026-11-12T00:00:00+08:00",
+  "changes": [
+    {"file":"src/lib/api.ts","kind":"security","summary":"assertSameOrigin now compares complete origins and rejects malformed Origin values and same-host protocol/port mismatches."},
+    {"file":"src/tests/api-origin.test.ts","kind":"test","summary":"Added regression coverage for configured origin, protocol/port mismatch, malformed origin and cross-site origin."},
+    {"file":"src/app/layout.tsx","kind":"accessibility","summary":"Added skip link and focusable main content anchor."},
+    {"file":"src/components/site-header.tsx","kind":"accessibility","summary":"Added an accessible label to the primary navigation."},
+    {"file":"src/app/globals.css","kind":"accessibility","summary":"Added visible keyboard-only skip-link styling."},
+    {"file":"package.json","kind":"tooling","summary":"Restored scripts and dependencies inferred from the actual source tree."},
+    {"file":"pnpm-lock.yaml","kind":"tooling","summary":"Generated reproducible dependency lockfile with pnpm."},
+    {"file":"tsconfig.json","kind":"tooling","summary":"Restored strict Next.js TypeScript configuration and @ path alias."},
+    {"file":"next-env.d.ts","kind":"tooling","summary":"Restored Next.js type references."},
+    {"file":"postcss.config.mjs","kind":"tooling","summary":"Restored Tailwind CSS v4 PostCSS integration."},
+    {"file":"vitest.config.ts","kind":"tooling","summary":"Restored test alias and test discovery configuration."},
+    {"file":"src/tests/update-apply-safety.test.ts","kind":"test-tooling","summary":"Documented the intentional .mjs test import exception and typed the callback parameter."}
+  ],
+  "notChanged": ["prisma/schema.prisma", "prisma/migrations", "database data", "external services"]
+}

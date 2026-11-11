@@ -1,0 +1,53 @@
+{
+  "name": "family-genealogy-of-hundreds-of-clans",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prisma": "prisma",
+    "seed": "tsx prisma/seed.ts",
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:ui": "node scripts/smoke-ui.mjs",
+    "security-audit": "node scripts/security-audit.mjs",
+    "perf-check": "node scripts/perf-check.mjs"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "echarts": "^5.6.0",
+    "ioredis": "^6.0.0",
+    "lucide-react": "^1.70.0",
+    "next": "^15.5.29",
+    "pdf-lib": "^1.17.1",
+    "pg": "^8.23.1",
+    "pinyin-pro": "^3.29.5",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "sharp": "^0.35.5",
+    "swr": "^2.5.1",
+    "tailwind-merge": "^3.7.0",
+    "tailwindcss": "^4.3.5",
+    "zod": "^4.6.6"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0",
+    "@tailwindcss/postcss": "^4.3.5",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^9.39.4",
+    "prisma": "^6.19.3",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.7"
+  }
+}

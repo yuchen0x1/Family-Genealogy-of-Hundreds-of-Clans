@@ -1,0 +1,33 @@
+{
+  "projectName": "中华寻根 · 百家族谱",
+  "rootPath": "E:\\移动云盘同步盘\\Family Genealogy of Hundreds of Clans",
+  "taskId": "single-project-2026-11-12",
+  "mode": "single-project",
+  "git": {
+    "repositoryPresent": false,
+    "repository": null,
+    "branch": null,
+    "note": "当前目录没有 .git，未执行分支切换、提交或推送。"
+  },
+  "technology": [
+    "Next.js 15.5.29 App Router",
+    "React 19.3.1",
+    "TypeScript 5.9.2",
+    "Prisma 6.19.3",
+    "PostgreSQL",
+    "Redis optional with memory fallback",
+    "Tailwind CSS 4.3.5",
+    "ECharts 5.6.0"
+  ],
+  "projectType": ["Web application", "genealogy platform", "family collaboration tool"],
+  "identityEvidence": [
+    "src/app and src/app/api use Next.js App Router",
+    "prisma/schema.prisma contains family, member, relationship, source and document models",
+    "reports/security-audit.json and reports/perf-report.json are existing local verification artifacts"
+  ],
+  "limitations": [
+    "No Git repository metadata or remote was available",
+    "No .env file was present in the project root",
+    "No running local web service was listening on port 3000 during this run"
+  ]
+}

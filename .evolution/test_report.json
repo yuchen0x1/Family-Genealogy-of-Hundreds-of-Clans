@@ -1,0 +1,18 @@
+{
+  "generatedAt": "2026-11-12T00:00:00+08:00",
+  "commands": [
+    {"command":"pnpm install --ignore-scripts","status":"PASS","evidence":"dependencies linked; package manifest and lockfile restored"},
+    {"command":"pnpm prisma generate","status":"PASS","evidence":"Prisma Client 6.19.3 generated from prisma/schema.prisma","warnings":["package.json#prisma is deprecated in Prisma 7; migrate to prisma.config.ts before upgrading"]},
+    {"command":"pnpm typecheck","status":"PASS","evidence":"tsc --noEmit"},
+    {"command":"pnpm test -- --reporter=dot","status":"PASS","evidence":"20 test files passed, 1 skipped; 213 tests passed, 17 skipped"},
+    {"command":"pnpm build","status":"PASS","evidence":"Next.js 15.5.29 production build; compile, type validation, page data and 45/45 static pages completed"},
+    {"command":"reports/security-audit.json","status":"PASS_WITH_WARNING","evidence":"generated 2026-11-10; 42/42 passed, 1 known CSP warning for unsafe-inline/unsafe-eval"},
+    {"command":"reports/perf-report.json","status":"PASS_BASELINE","evidence":"generated 2026-11-10; sequential p95 under 21ms in recorded sample, 60/60 concurrent requests succeeded"},
+    {"command":"HTTP/UI smoke scripts","status":"BLOCKED","evidence":"no root .env and no local service on port 3000 during this run; existing reports are retained as evidence but were not re-labeled as rerun"}
+  ],
+  "coverageLimits": [
+    "No production HTTPS, reverse proxy, S3, external OCR or WAF verification",
+    "No database migration run in this batch",
+    "No external upload, release or deployment was performed"
+  ]
+}
