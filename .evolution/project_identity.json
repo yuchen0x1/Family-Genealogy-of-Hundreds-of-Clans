@@ -7,9 +7,10 @@
     "repositoryPresent": true,
     "repository": "git@github.com:yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans.git",
     "branch": "main",
-    "localCommit": "9b6b8c7",
+    "localCommit": "c0775af",
+    "mergeCommit": "9b6b8c7",
     "remoteMain": "b670e2e",
-    "aheadBy": 2,
+    "aheadBy": 3,
     "note": "已在当前目录恢复 Git 元数据并统一到 main；远程目前只有 main，未自动推送。"
   },
   "technology": [

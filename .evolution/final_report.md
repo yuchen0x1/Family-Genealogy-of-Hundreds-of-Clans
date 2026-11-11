@@ -43,7 +43,7 @@ P0/P1 优先项是工程可运行性和写请求同源校验，已完成。GEDCO
 
 ## 7. 未完成事项与风险
 
-- 已恢复 Git 元数据并统一到 `main`：添加远程 `git@github.com:yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans.git`，确认远程仅保留 `main`，将当前源码快照与远程 `main` 合并为提交 `9b6b8c7`。本地 `main` 相对 `origin/main` 超前 2 个提交，未自动推送或发布。
+- 已恢复 Git 元数据并统一到 `main`：添加远程 `git@github.com:yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans.git`，确认远程仅保留 `main`，将当前源码快照与远程 `main` 合并为提交 `9b6b8c7`，并提交状态记录 `c0775af`。本地 `main` 相对 `origin/main` 超前 3 个提交，未自动推送或发布。
 - 当前目录没有 `.env`；未启动数据库、Redis 或站点，因此本轮没有重跑 HTTP/UI 冒烟、数据库迁移、生产 HTTPS、外部 OCR、对象存储和部署验收。
 - `package.json#prisma` 在 Prisma 7 中将废弃；升级 Prisma 前应迁移到 `prisma.config.ts`。
 - CSP 中的 `unsafe-inline` / `unsafe-eval` 仍是已有遗留项，需要先收敛 inline script 和运行时依赖，再改为 nonce/hash。

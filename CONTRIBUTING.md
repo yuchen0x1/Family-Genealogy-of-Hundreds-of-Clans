@@ -57,6 +57,10 @@ pnpm test:security         # 安全审计
 - 接口错误用 `ApiError(code, message)` 抛出，让统一错误处理返回结构化 JSON。
 - 新增环境变量必须同步写入 `.env.example` 并加注释。
 
+## 本地维护分支策略
+
+当前维护工作副本统一使用 `main`，后续项目更新直接提交到 `main`。本仓库不保留长期功能分支；确需临时分支时，完成合并回 `main` 后立即清理。远程推送和发布仍需在提交前确认目标与验证结果。
+
 ## Pull Request
 
 1. Fork 并从 `main` 切出分支，分支名建议 `feat/xxx`、`fix/xxx`。
