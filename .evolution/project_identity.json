@@ -4,10 +4,13 @@
   "taskId": "single-project-2026-11-12",
   "mode": "single-project",
   "git": {
-    "repositoryPresent": false,
-    "repository": null,
-    "branch": null,
-    "note": "当前目录没有 .git，未执行分支切换、提交或推送。"
+    "repositoryPresent": true,
+    "repository": "git@github.com:yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans.git",
+    "branch": "main",
+    "localCommit": "9b6b8c7",
+    "remoteMain": "b670e2e",
+    "aheadBy": 2,
+    "note": "已在当前目录恢复 Git 元数据并统一到 main；远程目前只有 main，未自动推送。"
   },
   "technology": [
     "Next.js 15.5.29 App Router",
@@ -26,7 +29,7 @@
     "reports/security-audit.json and reports/perf-report.json are existing local verification artifacts"
   ],
   "limitations": [
-    "No Git repository metadata or remote was available",
+    "Remote delivery was not pushed; local main is two commits ahead of origin/main",
     "No .env file was present in the project root",
     "No running local web service was listening on port 3000 during this run"
   ]
