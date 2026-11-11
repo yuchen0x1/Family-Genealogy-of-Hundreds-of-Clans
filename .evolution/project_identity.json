@@ -10,7 +10,7 @@
     "localCommit": "HEAD",
     "mergeCommit": "9b6b8c7",
     "remoteMain": "b670e2e",
-    "aheadBy": 4,
+    "aheadBy": "see git rev-list --left-right --count origin/main...main",
     "note": "已在当前目录恢复 Git 元数据并统一到 main；远程目前只有 main，未自动推送。"
   },
   "technology": [

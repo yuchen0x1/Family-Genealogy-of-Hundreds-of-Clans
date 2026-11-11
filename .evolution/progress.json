@@ -14,7 +14,7 @@
     {"id":"unit","name":"单元测试","status":"COMPLETED","evidence":"20 passed files, 213 passed tests, 17 skipped"},
     {"id":"build","name":"生产构建","status":"COMPLETED","evidence":"pnpm build; Next.js 15.5.29, 45/45 static pages generated"},
     {"id":"runtime","name":"真实服务冒烟与回归","status":"BLOCKED","evidence":"project root has no .env and no local service on port 3000; existing Nov 10 reports remain the latest runtime evidence"},
-    {"id":"release","name":"Git 提交、发布与远程交付","status":"PARTIAL","evidence":"local main initialized and consolidated with origin/main; HEAD is four commits ahead of origin/main; push/release not performed"}
+    {"id":"release","name":"Git 提交、发布与远程交付","status":"PARTIAL","evidence":"local main initialized and consolidated with origin/main; verify divergence with git rev-list --left-right --count origin/main...main; push/release not performed"}
   ],
   "next": [
     "Provide DATABASE_URL, optional REDIS_URL and encryption/session secrets, then run database migrations and smoke scripts",
