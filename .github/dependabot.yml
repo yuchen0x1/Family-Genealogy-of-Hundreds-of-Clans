@@ -1,0 +1,44 @@
+# 说明：本文件由仓库维护者添加，用于约束自动依赖升级的粒度。
+# 背景：首次自动升级把 16 个安全告警压成单个 PR，其中 zod 3→4、echarts 5→6、
+# vitest 3→5 三个大版本混在一起，必须人工逐个适配（见 fix(deps): 适配 zod v4）。
+# 策略：minor/patch 合并为一个 PR 便于批量评审；大版本各自独立成 PR，逐个评估。
+
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    groups:
+      # 小版本与补丁合并为一个 PR
+      minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+      # 安全更新也尽量合并，但同样不含大版本
+      security-minor-and-patch:
+        applies-to: security-updates
+        update-types:
+          - "minor"
+          - "patch"
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(devdeps)"
+    labels:
+      - "dependencies"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "ci(actions)"

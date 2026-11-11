@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint / Typecheck / Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # 不指定 version：由 package.json 的 packageManager 字段（pnpm@11.20.0）决定，
+      # 同时指定两者会被 pnpm/action-setup 判定为版本冲突直接失败。
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  release:
+    name: Create GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [quality, smoke]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Create release from changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+          if ! grep -qE "^## \\[${version//./\\.}\\]" CHANGELOG.md; then
+            echo "CHANGELOG.md 中缺少 ${version} 条目" >&2
+            exit 1
+          fi
+          body="$(awk -v version="$version" '
+            $0 ~ "^## \\[" version "\\]" { found=1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md)"
+          gh release create "$tag" --title "$tag" --notes "$body"
+
+      # 项目是自托管服务端应用，没有 .apk/.exe；这里产出具名发布包，
+      # 让 Release 页面有一个明确的下载项，而不是只有 GitHub 的 "Source code"。
+      - name: Package release bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+          name="xungen-${version}"
+          git archive --format=tar.gz --prefix="${name}/" -o "${name}.tar.gz" "$tag"
+          sha256sum "${name}.tar.gz" > "${name}.tar.gz.sha256"
+          gh release upload "$tag" "${name}.tar.gz" "${name}.tar.gz.sha256" --clobber
+          echo "已附加 ${name}.tar.gz（$(du -h "${name}.tar.gz" | cut -f1)）"
+
+  smoke:
+    name: Build + HTTP Smoke
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: xungen
+          POSTGRES_PASSWORD: xungen_pwd
+          POSTGRES_DB: xungen
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U xungen"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://xungen:xungen_pwd@127.0.0.1:5432/xungen?schema=public
+      SESSION_SECRET: ci-only-session-secret-not-for-production
+      ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+      # 无 Redis：自动降级为进程内缓存（被测行为之一）
+      REDIS_URL: ""
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+      - name: Build with release metadata
+        env:
+          APP_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '0.0.0-dev' }}
+          APP_BUILD_SHA: ${{ github.sha }}
+          APP_BUILD_TIME: ${{ github.event.head_commit.timestamp || '' }}
+        run: pnpm build
+      - name: Start production server
+        run: |
+          pnpm start > /tmp/next-server.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:3000/api/health > /dev/null; then
+              echo "server ready"; exit 0
+            fi
+            sleep 2
+          done
+          echo "server failed to start"; cat /tmp/next-server.log; exit 1
+      - run: pnpm test:smoke
+      - run: pnpm test:smoke:ui
+      - name: Show server log on failure
+        if: failure()
+        run: cat /tmp/next-server.log

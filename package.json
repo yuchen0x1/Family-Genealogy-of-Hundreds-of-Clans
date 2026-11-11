@@ -1,20 +1,40 @@
 {
-  "name": "family-genealogy-of-hundreds-of-clans",
-  "version": "0.1.0",
+  "name": "zhonghua-xungen",
+  "version": "0.2.1",
   "private": true,
+  "license": "MIT",
+  "description": "中华寻根 · 百家族谱 — 中华姓氏文化与智能家族族谱平台",
+  "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "next build",
+    "release": "node scripts/release.mjs",
     "start": "next start",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "db:pg": "node scripts/pg.mjs start",
+    "db:pg:stop": "node scripts/pg.mjs stop",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio",
+    "db:backup": "node scripts/backup.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prisma": "prisma",
-    "seed": "tsx prisma/seed.ts",
-    "smoke": "node scripts/smoke.mjs",
-    "smoke:ui": "node scripts/smoke-ui.mjs",
-    "security-audit": "node scripts/security-audit.mjs",
-    "perf-check": "node scripts/perf-check.mjs"
+    "test:smoke": "node scripts/smoke.mjs",
+    "test:smoke:ui": "node scripts/smoke-ui.mjs",
+    "test:smoke:archive": "node scripts/smoke-archive.mjs",
+    "test:smoke:community": "node scripts/smoke-community.mjs",
+    "test:smoke:admin": "node scripts/smoke-admin.mjs",
+    "test:security": "node scripts/security-audit.mjs",
+    "test:perf": "node scripts/perf-check.mjs",
+    "test:backup": "node --test scripts/storage-snapshot.test.mjs",
+    "test:reset-limits": "node scripts/reset-rate-limits.mjs",
+    "test:cleanup": "node scripts/cleanup-test-data.mjs --apply",
+    "test:e2e": "playwright test"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -23,10 +43,10 @@
     "@prisma/client": "^6.19.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "echarts": "^5.6.0",
+    "echarts": "^6.1.0",
     "ioredis": "^6.0.0",
     "lucide-react": "^1.70.0",
-    "next": "^15.5.29",
+    "next": "^16.4.5",
     "pdf-lib": "^1.17.1",
     "pg": "^8.23.1",
     "pinyin-pro": "^3.29.5",
@@ -35,19 +55,26 @@
     "sharp": "^0.35.5",
     "swr": "^2.5.1",
     "tailwind-merge": "^3.7.0",
-    "tailwindcss": "^4.3.5",
-    "zod": "^4.6.6"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.7",
+    "@next/eslint-plugin-next": "^16.4.5",
     "@playwright/test": "^1.65.0",
     "@tailwindcss/postcss": "^4.3.5",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "eslint": "^9.39.4",
+    "eslint-config-next": "^16.4.5",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "prisma": "^6.19.3",
+    "tailwindcss": "^4.3.5",
     "tsx": "^4.23.15",
-    "typescript": "^5.9.2",
-    "vitest": "^3.2.7"
+    "typescript": "^6.0.3",
+    "vitest": "^5.1.0"
   }
 }

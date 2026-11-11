@@ -1,0 +1,28 @@
+[Unit]
+Description=Xungen genealogy web application
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=xungen
+Group=xungen
+WorkingDirectory=/srv/xungen
+EnvironmentFile=/etc/xungen/xungen.env
+Environment=NODE_ENV=production
+Environment=APP_UPDATE_DRIVER=SOURCE
+ExecStart=/usr/bin/pnpm start
+# 更新器向旧进程发送 SIGTERM 后，由 systemd 自动拉起新版本。
+Restart=always
+RestartSec=5
+# SOURCE 更新在此服务身份下安装依赖、构建并替换源码；不授予 sudo 或 Docker socket。
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/xungen
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target
