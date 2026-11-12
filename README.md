@@ -9,7 +9,7 @@
 寻一姓之源，续一脉之谱 —— 以史料为据、以隐私为界的中华姓氏文化与家族族谱平台
 
 [![CI](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/actions/workflows/ci.yml/badge.svg)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.2.0-8a6a35)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases)
+[![Release](https://img.shields.io/badge/release-v0.2.2-8a6a35)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2f5a58)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178c6)](https://www.typescriptlang.org)
@@ -40,6 +40,10 @@ English README: [README_EN.md](README_EN.md)
 3. **同姓 ≠ 同宗**。宗亲关联需双方显式确认，确认后也**不**创建亲属关系，不参与称谓计算。
 
 适合：家族修谱组织者、姓氏文化研究者、地方宗亲会、想为家族留一份可考数字档案的开发者与爱好者。
+
+## 最新更新
+
+**v0.2.2（2026-11-13）**：稳定版在线更新改用项目专用发布包，安装前校验包大小与 SHA-256；管理员可配置强制数字签名校验，校验缺失或失败时会拒绝安装。详见[发布记录](docs/releases/release-notes.md)。
 
 ---
 
@@ -250,7 +254,7 @@ flowchart LR
 | **B. 下载压缩包** | 打开 [Releases](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/latest) → `Assets` 下的 **Source code (zip)** | 不想用 git 的场景 |
 | **C. Docker 一键起** | 解压/克隆后 `docker compose up -d --build` | 有 Docker 的服务器 |
 
-想确认拿到的是最新版：`package.json` 的 `version` 应等于 [最新 Release](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/latest) 的 tag 去掉 `v`（当前 `0.2.1`）。
+想确认拿到的是最新版：`package.json` 的 `version` 应等于 [最新 Release](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/latest) 的 tag 去掉 `v`（当前 `0.2.2`）。
 
 **环境要求**：Node.js ≥ 22、pnpm 11（Corepack）。Windows / macOS / Linux 均可；Windows 优先用 PowerShell。
 
@@ -343,7 +347,7 @@ CI（GitHub Actions）：push / PR 自动跑 lint + typecheck + 单测，并在 
 
 ## 🗺️ 项目路线图
 
-**已实现**（截至 v0.2.0，全部有测试或演练支撑）
+**已实现**（截至 v0.2.2，全部有测试或演练支撑）
 百家姓知识库 · 历史寻根与迁徙地图 · 族谱创建与协作 · 人物/关系/字辈 · 四视图图谱 · 亲属称谓 · 档案中心 · 7 种导出 / GEDCOM 导入 · 版本快照恢复 · 社区 · 管理后台 · 审计日志 · 在线更新（含更新提醒） · 备份恢复 · Docker/Compose/Nginx 配置
 
 **正在完善**
