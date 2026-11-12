@@ -13,7 +13,15 @@
     {"file":"postcss.config.mjs","kind":"tooling","summary":"Restored Tailwind CSS v4 PostCSS integration."},
     {"file":"vitest.config.ts","kind":"tooling","summary":"Restored test alias and test discovery configuration."},
     {"file":"src/tests/update-apply-safety.test.ts","kind":"test-tooling","summary":"Documented the intentional .mjs test import exception and typed the callback parameter."},
-    {"file":".git","kind":"repository","summary":"Initialized the workspace on main, added the canonical GitHub origin, fetched the remote main branch, and consolidated the existing workspace with a merge commit; no push was performed."}
+    {"file":"src/lib/updater/integrity.ts","kind":"security","summary":"Added SHA-256 manifest/file checks, detached signature verification, and HTTPS GitHub asset URL validation."},
+    {"file":"src/lib/updater/github.ts","kind":"update-system","summary":"Added Release asset discovery, normalized digests, mandatory/security/minimum-version flags, and checksum/signature asset links."},
+    {"file":"src/lib/updater/apply.ts","kind":"update-system","summary":"Stable Release installation now requires a supported archive, size and SHA-256 verification, with optional detached signature enforcement."},
+    {"file":".github/workflows/ci.yml","kind":"release","summary":"Release workflow now runs only from main for branch pushes, emits update metadata and checksum assets, and can publish a detached signature from a CI secret."},
+    {"file":"docs/AUTO_UPDATE.md","kind":"documentation","summary":"Documented SOURCE/DOCKER/SIMULATE drivers, release asset requirements, signing configuration, and validation limits."},
+    {"file":"src/tests/updater-github.test.ts","kind":"test","summary":"Added coverage for release asset discovery and mandatory/security/minimum-version metadata markers."},
+    {"file":"src/tests/updater-integrity.test.ts","kind":"test","summary":"Added coverage for digest parsing, SHA-256 calculation, GitHub URL restrictions, and RSA detached signatures."},
+    {"file":".git","kind":"repository","summary":"Confirmed the workspace has only local main plus origin/main; local main is 6 commits ahead and no remote push was performed."},
+    {"file":"CONTRIBUTING.md","kind":"repository","summary":"Maintains the main-only local workflow: future updates are committed to main and temporary branches are removed after merge."}
   ],
   "notChanged": ["prisma/schema.prisma", "prisma/migrations", "database data", "external services"]
 }

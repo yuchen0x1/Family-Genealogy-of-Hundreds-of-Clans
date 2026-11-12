@@ -153,3 +153,14 @@ export function githubToken(): string | null {
   const token = (process.env.APP_UPDATE_TOKEN || process.env.GITHUB_TOKEN || "").trim();
   return token || null;
 }
+
+/** 可选的 Release 资产签名公钥；私钥只允许存在于 CI Secret。 */
+export function updateSigningPublicKey(): string | null {
+  const key = (process.env.APP_UPDATE_SIGNING_PUBLIC_KEY || "").trim();
+  return key || null;
+}
+
+/** 开启后，稳定版必须同时具备 SHA-256 与 detached signature 才允许安装。 */
+export function requireUpdateSignature(): boolean {
+  return process.env.APP_UPDATE_REQUIRE_SIGNATURE === "true";
+}

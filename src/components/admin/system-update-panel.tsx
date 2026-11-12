@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import {
-  ArrowRight, CheckCircle2, Download, History, Loader2, RefreshCw, RotateCcw,
+  ArrowRight, CheckCircle2, Download, History, Loader2, RefreshCw, RotateCcw, ShieldCheck,
   Server, ShieldAlert, TriangleAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -288,6 +288,28 @@ export function SystemUpdatePanel() {
             <div className="flex items-start gap-2 rounded-lg border border-line bg-cream/60 p-3 text-[11px] leading-5 text-graphite">
               <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span>{data.undeterminedReason}</span>
+            </div>
+          )}
+
+          {upstream && (
+            <div className="rounded-lg border border-line bg-cream/40 p-3">
+              <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold tracking-wide text-graphite">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                发布完整性
+              </div>
+              <div className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
+                <MetaRow label="发布资产">{upstream.asset?.name ?? "源码包（仅分支/旧 tag）"}</MetaRow>
+                <MetaRow label="资产大小">{upstream.asset?.size ? `${(upstream.asset.size / 1024 / 1024).toFixed(1)} MB` : "—"}</MetaRow>
+                <MetaRow label="SHA-256">
+                  <span className="font-mono">{upstream.asset?.digest?.replace(/^sha256:/i, "").slice(0, 16) ?? "更新时校验"}{upstream.asset?.digest ? "…" : ""}</span>
+                </MetaRow>
+                <MetaRow label="更新性质">
+                  {upstream.securityFix ? "安全修复" : "常规更新"}{upstream.mandatory ? " · 必须更新" : " · 可选更新"}
+                </MetaRow>
+              </div>
+              {upstream.minSupportedVersion && (
+                <p className="mt-2 text-[11px] leading-5 text-graphite">最低支持版本：v{upstream.minSupportedVersion}</p>
+              )}
             </div>
           )}
 

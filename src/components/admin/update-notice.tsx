@@ -27,6 +27,7 @@ export function useUpdateNotice(enabled: boolean): UpdateState | null {
     revalidateOnReconnect: false,
     shouldRetryOnError: false,
     dedupingInterval: 300_000,
+    refreshInterval: 300_000,
   });
   return data ?? null;
 }

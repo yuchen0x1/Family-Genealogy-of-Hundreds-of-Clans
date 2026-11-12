@@ -184,6 +184,7 @@
 - **并发互斥**：`update_jobs.active_lock` 唯一索引保证同一时刻只有一个活跃任务，第二个请求得到 `409 UPDATE_IN_PROGRESS`。
 - **上游不可达不报 500**：`GET /admin/system/update` 始终返回 200，当前版本与配对信息照常展示，上游失败只作为 `upstreamError` 附带说明——否则一次网络抖动就会让整个后台页面白屏。
 - **常见错误码**：`UPSTREAM_UNAVAILABLE`(502)、`CANNOT_DETERMINE_VERSION`(409)、`ALREADY_UP_TO_DATE`(409)、`SIMULATE_FORBIDDEN`(403)、`UPDATE_IN_PROGRESS`(409)、`INVALID_JOB_ID`(400)、`JOB_NOT_FOUND`(404)。备份、下载与校验阶段的失败（`BACKUP_FAILED`、`DOWNLOAD_*`、`INVALID_ARCHIVE`、`VERSION_MISMATCH`）记录在任务对象上，不改变已返回的 HTTP 状态。
+- **发布资产完整性**：stable Release 必须提供 `xungen-<version>.tar.gz`，服务端校验 HTTPS GitHub 资产地址、声明大小、GitHub digest 或 `.sha256` 清单，并在 `APP_UPDATE_SIGNING_PUBLIC_KEY`/`APP_UPDATE_REQUIRE_SIGNATURE` 配置时校验 `.sig` detached signature；失败码包括 `RELEASE_ASSET_MISSING`、`SIZE_MISMATCH`、`CHECKSUM_MISSING`、`CHECKSUM_MISMATCH`、`SIGNATURE_MISSING`、`SIGNATURE_MISMATCH`。
 
 ## 4. 调用示例
 

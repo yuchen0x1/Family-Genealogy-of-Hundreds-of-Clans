@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
     tags: ["v*"]
   pull_request:
 
@@ -41,7 +41,11 @@ jobs:
       - name: Create release from changelog
         env:
           GH_TOKEN: ${{ github.token }}
+          UPDATE_MANDATORY: ${{ vars.UPDATE_MANDATORY || 'false' }}
+          UPDATE_SECURITY_FIX: ${{ vars.UPDATE_SECURITY_FIX || 'false' }}
+          UPDATE_MIN_SUPPORTED_VERSION: ${{ vars.UPDATE_MIN_SUPPORTED_VERSION || '' }}
         run: |
+          set -euo pipefail
           tag="${GITHUB_REF_NAME}"
           version="${tag#v}"
           if ! grep -qE "^## \\[${version//./\\.}\\]" CHANGELOG.md; then
@@ -53,6 +57,7 @@ jobs:
             found && /^## / { exit }
             found { print }
           ' CHANGELOG.md)"
+          body+=$'\n\n<!-- xungen-update-mandatory: '"${UPDATE_MANDATORY:-false}"$' -->\n<!-- xungen-security-fix: '"${UPDATE_SECURITY_FIX:-false}"$' -->\n<!-- xungen-min-supported-version: '"${UPDATE_MIN_SUPPORTED_VERSION:-}"$' -->'
           gh release create "$tag" --title "$tag" --notes "$body"
 
       # 项目是自托管服务端应用，没有 .apk/.exe；这里产出具名发布包，
@@ -60,6 +65,10 @@ jobs:
       - name: Package release bundle
         env:
           GH_TOKEN: ${{ github.token }}
+          UPDATE_SIGNING_PRIVATE_KEY: ${{ secrets.UPDATE_SIGNING_PRIVATE_KEY }}
+          UPDATE_MANDATORY: ${{ vars.UPDATE_MANDATORY || 'false' }}
+          UPDATE_SECURITY_FIX: ${{ vars.UPDATE_SECURITY_FIX || 'false' }}
+          UPDATE_MIN_SUPPORTED_VERSION: ${{ vars.UPDATE_MIN_SUPPORTED_VERSION || '' }}
         run: |
           set -euo pipefail
           tag="${GITHUB_REF_NAME}"
@@ -67,8 +76,22 @@ jobs:
           name="xungen-${version}"
           git archive --format=tar.gz --prefix="${name}/" -o "${name}.tar.gz" "$tag"
           sha256sum "${name}.tar.gz" > "${name}.tar.gz.sha256"
-          gh release upload "$tag" "${name}.tar.gz" "${name}.tar.gz.sha256" --clobber
-          echo "已附加 ${name}.tar.gz（$(du -h "${name}.tar.gz" | cut -f1)）"
+          digest="$(sha256sum "${name}.tar.gz" | awk '{print $1}')"
+          size="$(stat -c '%s' "${name}.tar.gz")"
+          cat > "${name}.update.json" <<EOF
+          {"version":"${version}","tag":"${tag}","channel":"stable","releaseDate":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","mandatory":${UPDATE_MANDATORY:-false},"securityFix":${UPDATE_SECURITY_FIX:-false},"minSupportedVersion":"${UPDATE_MIN_SUPPORTED_VERSION:-}","commit":"${GITHUB_SHA}","assets":[{"name":"${name}.tar.gz","size":${size},"sha256":"${digest}"}]}
+          EOF
+          assets=("${name}.tar.gz" "${name}.tar.gz.sha256" "${name}.update.json")
+          if [[ -n "${UPDATE_SIGNING_PRIVATE_KEY:-}" ]]; then
+            umask 077
+            printf '%s' "$UPDATE_SIGNING_PRIVATE_KEY" > signing.key
+            openssl dgst -sha256 -sign signing.key -out "${name}.tar.gz.sig.bin" "${name}.tar.gz"
+            base64 -w 0 "${name}.tar.gz.sig.bin" > "${name}.tar.gz.sig"
+            assets+=("${name}.tar.gz.sig")
+            rm -f signing.key "${name}.tar.gz.sig.bin"
+          fi
+          gh release upload "$tag" "${assets[@]}" --clobber
+          echo "已附加 ${name}.tar.gz、SHA-256 清单与更新元数据（$(du -h "${name}.tar.gz" | cut -f1)）"
 
   smoke:
     name: Build + HTTP Smoke

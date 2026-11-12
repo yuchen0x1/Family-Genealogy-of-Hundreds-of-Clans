@@ -36,15 +36,18 @@ P0/P1 优先项是工程可运行性和写请求同源校验，已完成。GEDCO
 
 - `pnpm prisma generate`：通过。
 - `pnpm typecheck`：通过。
-- `pnpm test -- --reporter=dot`：20 个测试文件通过，1 个跳过；213 个测试通过，17 个跳过。
-- `pnpm build`：通过；Next.js 15.5.29 完成生产构建并生成 45/45 静态页面。
+- `pnpm test -- --run`：21 个测试文件通过，1 个跳过；217 个测试通过，17 个跳过。
+- `pnpm lint`：通过。
+- 在线更新专项测试覆盖 GitHub Release 资产解析、SHA-256、校验清单、GitHub 地址限制、RSA detached signature 与更新提示。
+- `pnpm build`：通过；Next.js 16.4.5 完成生产构建并生成 44/44 静态页面，Turbopack 报告 2 条既有动态文件路径追踪警告。
 - 已有 `reports/security-audit.json`：42/42 通过，1 个已知 CSP 宽松指令告警。
 - 已有 `reports/perf-report.json`：记录的 60 个并发请求全部成功；该文件是 2026-11-10 的历史基线，本轮没有在无服务环境中伪称重新执行。
 
 ## 7. 未完成事项与风险
 
-- 已恢复 Git 元数据并统一到 `main`：添加远程 `git@github.com:yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans.git`，确认远程仅保留 `main`，将当前源码快照与远程 `main` 合并为提交 `9b6b8c7`，并提交状态记录。当前本地 `main` 已包含远程 `main`，未自动推送或发布；差异可用 `git rev-list --left-right --count origin/main...main` 查看。
+- 已恢复 Git 元数据并统一到 `main`：确认远程仅保留 `main`，当前本地 `main` 相对 `origin/main` 为 `0 behind / 6 ahead`。后续维护提交直接进入本地 `main`；本轮未自动推送或发布。
 - 当前目录没有 `.env`；未启动数据库、Redis 或站点，因此本轮没有重跑 HTTP/UI 冒烟、数据库迁移、生产 HTTPS、外部 OCR、对象存储和部署验收。
+- 在线更新已完成代码与 CI 接入，但没有真实生产 Release、签名密钥、Docker socket、systemd 或生产数据库，因此真实端到端升级仍待预发环境验证。
 - `package.json#prisma` 在 Prisma 7 中将废弃；升级 Prisma 前应迁移到 `prisma.config.ts`。
 - CSP 中的 `unsafe-inline` / `unsafe-eval` 仍是已有遗留项，需要先收敛 inline script 和运行时依赖，再改为 nonce/hash。
 
@@ -54,9 +57,9 @@ P0/P1 优先项是工程可运行性和写请求同源校验，已完成。GEDCO
 |---|---:|---:|---|
 | 功能完整度 | 19/25 | 20/25 | 现有族谱、关系、资料、协作与导入导出模块；本批次补工程可运行性 |
 | UI 与用户体验 | 15/20 | 16/20 | 全局 skip link、主内容锚点、主导航语义 |
-| 稳定性 | 14/20 | 17/20 | 类型检查、213 个单元测试、生产构建通过 |
-| 架构与代码质量 | 11/15 | 12/15 | 工程配置恢复、同源校验回归测试、未改动数据库结构 |
-| 性能与安全 | 8/10 | 9/10 | 同源校验加固；历史安全报告 42/42 通过，CSP 告警仍在 |
+| 稳定性 | 14/20 | 18/20 | 类型检查、217 个单元测试、Lint 与生产构建通过 |
+| 架构与代码质量 | 11/15 | 13/15 | 工程配置恢复、更新资产完整性校验、同源校验回归测试、未改动数据库结构 |
+| 性能与安全 | 8/10 | 9/10 | 更新包 SHA-256/签名门禁与同源校验加固；历史安全报告 42/42 通过，CSP 告警仍在 |
 | 文档与工程交付 | 4/10 | 9/10 | package/lock/config、Git `main` 基线和 `.evolution` 独立交付记录；远程推送与部署仍未执行 |
 | **合计** | **71/100** | **83/100** | 评分以本地源码、Git 状态、测试和现有报告为证据 |
 
@@ -66,3 +69,10 @@ P0/P1 优先项是工程可运行性和写请求同源校验，已完成。GEDCO
 2. 为 GEDCOM 5.5.1/5.5.5、媒体、来源引用建立 round-trip fixtures 和兼容性报告。
 3. 引入研究任务与事件时间线，保持所有 AI 或自动建议只读、可追溯、不可自动写入已核实事实。
 4. 依赖按远程 `main` 的锁文件重新安装并重跑检查；如需远程交付，再明确授权后推送 `origin/main`。
+
+## 10. 本轮自动更新与分支治理
+
+- 稳定版 Release 必须提供 `xungen-<version>.tar.gz`；安装前校验资产大小、GitHub digest 或 `.sha256` 清单，并可通过 `APP_UPDATE_SIGNING_PUBLIC_KEY` 与 `APP_UPDATE_REQUIRE_SIGNATURE` 强制 detached signature。
+- Release body 支持必须更新、安全修复和最低支持版本标记；管理后台显示资产、摘要与安全策略，登录后更新提示每 5 分钟刷新。
+- `.github/workflows/ci.yml` 的分支推送触发器已收敛为 `main`；Release 仍由 `v*` tag 触发，发布包与校验资产由 CI 生成。
+- 本地归档演练成功：`xungen-0.2.1.tar.gz`，SHA-256 为 `0736b611c687897e2c6cb80cacce330cf99af4dc2532e988c8b7f598276e4ae2`，归档包含 `package.json`；临时文件已清理。

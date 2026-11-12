@@ -10,8 +10,8 @@
     "localCommit": "HEAD",
     "mergeCommit": "9b6b8c7",
     "remoteMain": "b670e2e",
-    "aheadBy": "see git rev-list --left-right --count origin/main...main",
-    "note": "已在当前目录恢复 Git 元数据并统一到 main；远程目前只有 main，未自动推送。"
+    "aheadBy": "6 commits (git rev-list --left-right --count origin/main...main = 0 6)",
+    "note": "当前本地维护分支统一为 main；远程目前只有 main，后续更新直接提交 main，未自动推送。"
   },
   "technology": [
     "Next.js 15.5.29 App Router",
@@ -30,7 +30,7 @@
     "reports/security-audit.json and reports/perf-report.json are existing local verification artifacts"
   ],
   "limitations": [
-    "Remote delivery was not pushed; local main is two commits ahead of origin/main",
+    "Remote delivery was not pushed; local main is six commits ahead of origin/main and has no behind commits",
     "No .env file was present in the project root",
     "No running local web service was listening on port 3000 during this run"
   ]

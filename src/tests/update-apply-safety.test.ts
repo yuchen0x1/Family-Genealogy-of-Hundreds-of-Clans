@@ -15,7 +15,6 @@ import {
   selectReplaceable,
   skippedEntries,
   validateArgs,
-// @ts-expect-error The repository's TypeScript build does not type-check .mjs utility exports.
 } from "../../scripts/update-apply-safety.mjs";
 
 const STAGING_ROOT = path.resolve("/app/.storage/update");

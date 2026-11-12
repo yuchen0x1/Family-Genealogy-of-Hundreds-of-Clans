@@ -9,6 +9,7 @@
  */
 import { cacheGet, cacheSet } from "@/lib/cache";
 import { githubToken } from "./config";
+import { normalizeSha256 } from "./integrity";
 import { normalizeVersion } from "./version";
 
 export type UpstreamRelease = {
@@ -21,6 +22,20 @@ export type UpstreamRelease = {
   notes: string;
   url: string | null;
   source: "release" | "tag" | "commit";
+  /** 稳定版 Release 的可验证发布资产；分支/旧 tag 没有时为 null。 */
+  asset: {
+    id: number | null;
+    name: string;
+    url: string;
+    browserUrl: string | null;
+    size: number | null;
+    digest: string | null;
+    checksumUrl: string | null;
+    signatureUrl: string | null;
+  } | null;
+  mandatory: boolean;
+  securityFix: boolean;
+  minSupportedVersion: string | null;
 };
 
 export class UpstreamError extends Error {
@@ -98,6 +113,16 @@ type GhRelease = {
   published_at?: string;
   draft?: boolean;
   prerelease?: boolean;
+  assets?: GhAsset[];
+};
+
+type GhAsset = {
+  id?: number;
+  name?: string;
+  url?: string;
+  browser_download_url?: string;
+  size?: number;
+  digest?: string | null;
 };
 
 type GhTag = { name?: string; commit?: { sha?: string } };
@@ -112,6 +137,40 @@ function clampNotes(raw: string | undefined | null): string {
   const text = String(raw ?? "").trim();
   if (text.length <= MAX_NOTES) return text;
   return `${text.slice(0, MAX_NOTES)}\n\n…（更新日志过长已截断）`;
+}
+
+function releaseFlags(body: string | undefined | null): Pick<UpstreamRelease, "mandatory" | "securityFix" | "minSupportedVersion"> {
+  const text = String(body ?? "");
+  const readBoolean = (key: string, marker: string) => {
+    const value = new RegExp(`(?:^${key}\\s*:\\s*|<!--\\s*${marker}\\s*:\\s*)(true|false)`, "im").exec(text)?.[1];
+    return value === "true";
+  };
+  const minSupportedVersion =
+    /(?:^min-supported-version\s*:\s*|<!--\s*xungen-min-supported-version\s*:\s*)([^\s<]+)?/im.exec(text)?.[1] || null;
+  return {
+    mandatory: readBoolean("update-mandatory", "xungen-update-mandatory"),
+    securityFix: readBoolean("security-fix", "xungen-security-fix"),
+    minSupportedVersion,
+  };
+}
+
+function selectReleaseAsset(version: string, assets: GhAsset[] | undefined): UpstreamRelease["asset"] {
+  const rows = Array.isArray(assets) ? assets : [];
+  const expectedName = `xungen-${version}.tar.gz`;
+  const archive = rows.find((asset) => asset.name === expectedName) ?? rows.find((asset) => asset.name?.endsWith(".tar.gz") && asset.name?.startsWith("xungen-"));
+  if (!archive?.name || !archive.url) return null;
+  const checksum = rows.find((asset) => asset.name === `${archive.name}.sha256`);
+  const signature = rows.find((asset) => asset.name === `${archive.name}.sig`);
+  return {
+    id: typeof archive.id === "number" ? archive.id : null,
+    name: archive.name,
+    url: archive.url,
+    browserUrl: archive.browser_download_url ?? null,
+    size: Number.isSafeInteger(archive.size) ? archive.size! : null,
+    digest: normalizeSha256(archive.digest),
+    checksumUrl: checksum?.url ?? null,
+    signatureUrl: signature?.url ?? null,
+  };
 }
 
 async function resolveTagCommit(repo: string, tag: string): Promise<string> {
@@ -136,6 +195,7 @@ async function fetchStable(repo: string): Promise<UpstreamRelease> {
     const tag = String(release.tag_name ?? "").trim();
     if (!tag) throw new UpstreamError("上游 Release 缺少 tag 名称", "INVALID_RESPONSE");
     const commit = await resolveTagCommit(repo, tag);
+    const flags = releaseFlags(release.body);
     return {
       version: normalizeVersion(tag),
       tagName: tag,
@@ -144,6 +204,8 @@ async function fetchStable(repo: string): Promise<UpstreamRelease> {
       notes: clampNotes(release.body) || "（该版本未提供更新说明）",
       url: release.html_url ?? null,
       source: "release",
+      asset: selectReleaseAsset(normalizeVersion(tag), release.assets),
+      ...flags,
     };
   }
 
@@ -162,6 +224,10 @@ async function fetchStable(repo: string): Promise<UpstreamRelease> {
     notes: "（该 tag 未附带更新说明，可到仓库的 commits 页面查看改动）",
     url: `https://github.com/${repo}/releases/tag/${encodeURIComponent(first.name)}`,
     source: "tag",
+    asset: null,
+    mandatory: false,
+    securityFix: false,
+    minSupportedVersion: null,
   };
 }
 
@@ -178,6 +244,10 @@ async function fetchBranch(repo: string, branch: string): Promise<UpstreamReleas
     notes: clampNotes(commit.commit?.message) || "（该提交未提供说明）",
     url: commit.html_url ?? `https://github.com/${repo}/commit/${sha}`,
     source: "commit",
+    asset: null,
+    mandatory: false,
+    securityFix: false,
+    minSupportedVersion: null,
   };
 }
 

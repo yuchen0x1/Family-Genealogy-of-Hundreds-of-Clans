@@ -17,8 +17,9 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { ApiError } from "@/lib/api";
 import { patchJob, finishJob } from "./jobs";
-import { githubToken } from "./config";
+import { githubToken, requireUpdateSignature, updateSigningPublicKey } from "./config";
 import type { UpstreamRelease } from "./github";
+import { assertTrustedGitHubAssetUrl, normalizeSha256, parseSha256Manifest, sha256File, verifyDetachedSignature } from "./integrity";
 
 /** 源码包体积上限，防止异常上游把磁盘写满 */
 const MAX_ARCHIVE_BYTES = 200 * 1024 * 1024;
@@ -101,6 +102,24 @@ async function runBackupStep(jobId: string, enabled: boolean): Promise<void> {
   await patchJob(jobId, { progress: 20, message: "备份完成" }, { level: "info", text: "备份完成" });
 }
 
+async function fetchReleaseTextAsset(repo: string, assetUrl: string, errorCode: "CHECKSUM_DOWNLOAD_FAILED" | "SIGNATURE_DOWNLOAD_FAILED"): Promise<string> {
+  const url = assertTrustedGitHubAssetUrl(assetUrl, repo);
+  const headers: Record<string, string> = {
+    Accept: "application/octet-stream",
+    "User-Agent": "xungen-updater",
+  };
+  const token = githubToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  let response: Response;
+  try {
+    response = await fetch(url, { headers, signal: AbortSignal.timeout(15_000), redirect: "follow", cache: "no-store" });
+  } catch {
+    throw new ApiError(502, "无法下载发布包校验资产", errorCode);
+  }
+  if (!response.ok) throw new ApiError(502, `发布包校验资产返回 ${response.status}`, errorCode);
+  return response.text();
+}
+
 /**
  * 下载源码包并逐块写入磁盘，按已接收字节数推进进度。
  * 上游未返回 Content-Length 时无法算百分比，退化为「已下载 N MB」并封顶在区间上限，
@@ -110,9 +129,15 @@ async function downloadArchive(jobId: string, repo: string, target: UpstreamRele
   const ref = pinnedCommit || target.commit || target.tagName || target.version;
   if (!ref) throw new ApiError(502, "上游版本缺少可下载的引用", "NO_DOWNLOAD_REF");
 
-  // 走 api.github.com 取 tarball：私有仓库在这里带 token 才有效，
-  // codeload 的直连地址不接受 Authorization 头。
-  const finalUrl = `https://api.github.com/repos/${repo}/tarball/${encodeURIComponent(ref)}`;
+  if (target.source === "release" && !target.asset) {
+    throw new ApiError(502, "该 Release 没有受支持的 xungen 发布包，已拒绝下载未校验源码包", "RELEASE_ASSET_MISSING");
+  }
+
+  // 稳定版优先使用 Release 资产；分支/旧 tag 才退回固定 commit 的源码包。
+  // Release 资产通过 API endpoint 下载，令牌不会被转发到第三方重定向域名。
+  const finalUrl = target.asset
+    ? assertTrustedGitHubAssetUrl(target.asset.url, repo).toString()
+    : `https://api.github.com/repos/${repo}/tarball/${encodeURIComponent(ref)}`;
 
   await patchJob(
     jobId,
@@ -120,7 +145,10 @@ async function downloadArchive(jobId: string, repo: string, target: UpstreamRele
     { level: "info", text: `开始下载版本 ${target.version}（ref=${ref}）` },
   );
 
-  const headers: Record<string, string> = { "User-Agent": "xungen-updater", Accept: "application/vnd.github+json" };
+  const headers: Record<string, string> = {
+    "User-Agent": "xungen-updater",
+    Accept: target.asset ? "application/octet-stream" : "application/vnd.github+json",
+  };
   const token = githubToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -189,11 +217,52 @@ async function downloadArchive(jobId: string, repo: string, target: UpstreamRele
     await rm(dest, { force: true });
     throw new ApiError(502, "下载到的源码包为空，已中止", "EMPTY_ARCHIVE");
   }
+
+  if (target.asset?.size !== null && target.asset?.size !== undefined && info.size !== target.asset.size) {
+    await rm(dest, { force: true });
+    throw new ApiError(502, `发布包大小校验失败（期望 ${target.asset.size} 字节，实际 ${info.size} 字节）`, "SIZE_MISMATCH");
+  }
+
+  let expectedDigest = normalizeSha256(target.asset?.digest);
+  if (!expectedDigest && target.asset?.checksumUrl) {
+    expectedDigest = parseSha256Manifest(
+      await fetchReleaseTextAsset(repo, target.asset.checksumUrl, "CHECKSUM_DOWNLOAD_FAILED"),
+      target.asset.name,
+    );
+  }
+  if (target.source === "release" && !expectedDigest) {
+    await rm(dest, { force: true });
+    throw new ApiError(502, "发布包缺少 SHA-256 校验值，已拒绝安装", "CHECKSUM_MISSING");
+  }
+  if (expectedDigest) {
+    const actualDigest = await sha256File(dest);
+    if (actualDigest !== expectedDigest) {
+      await rm(dest, { force: true });
+      throw new ApiError(502, "发布包 SHA-256 校验失败，已拒绝安装", "CHECKSUM_MISMATCH");
+    }
+  }
+
+  const publicKey = updateSigningPublicKey();
+  if (publicKey || requireUpdateSignature()) {
+    if (!publicKey) {
+      await rm(dest, { force: true });
+      throw new ApiError(500, "已要求更新签名，但实例没有配置 APP_UPDATE_SIGNING_PUBLIC_KEY", "SIGNATURE_KEY_MISSING");
+    }
+    if (!target.asset?.signatureUrl) {
+      await rm(dest, { force: true });
+      throw new ApiError(502, "发布包缺少 detached signature，已拒绝安装", "SIGNATURE_MISSING");
+    }
+    const signature = await fetchReleaseTextAsset(repo, target.asset.signatureUrl, "SIGNATURE_DOWNLOAD_FAILED");
+    if (!(await verifyDetachedSignature(dest, signature, publicKey))) {
+      await rm(dest, { force: true });
+      throw new ApiError(502, "发布包数字签名校验失败，已拒绝安装", "SIGNATURE_MISMATCH");
+    }
+  }
   const sizeMb = (info.size / 1024 / 1024).toFixed(1);
   await patchJob(
     jobId,
     { progress: DOWNLOAD_TO, message: `下载完成（${sizeMb} MB）` },
-    { level: "info", text: `源码包已保存，大小 ${sizeMb} MB` },
+    { level: "info", text: `发布包已保存并完成${expectedDigest ? " SHA-256 " : " "}校验，大小 ${sizeMb} MB` },
   );
   return dest;
 }

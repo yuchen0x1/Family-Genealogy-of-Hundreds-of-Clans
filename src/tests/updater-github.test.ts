@@ -47,6 +47,43 @@ describe("GitHub 上游版本检测", () => {
     expect(cacheSet).toHaveBeenCalledOnce();
   });
 
+  it("识别稳定版发布资产、校验清单、签名和发布策略标记", async () => {
+    const digest = "a".repeat(64);
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(jsonResponse({
+        tag_name: "v1.4.0",
+        body: "修复说明\n<!-- xungen-update-mandatory: true -->\n<!-- xungen-security-fix: true -->\n<!-- xungen-min-supported-version: 1.2.0 -->",
+        assets: [
+          {
+            id: 7,
+            name: "xungen-1.4.0.tar.gz",
+            url: "https://api.github.com/repos/example/repo/releases/assets/7",
+            browser_download_url: "https://github.com/example/repo/releases/download/v1.4.0/xungen-1.4.0.tar.gz",
+            size: 1234,
+            digest: `sha256:${digest}`,
+          },
+          { name: "xungen-1.4.0.tar.gz.sha256", url: "https://api.github.com/repos/example/repo/releases/assets/8" },
+          { name: "xungen-1.4.0.tar.gz.sig", url: "https://api.github.com/repos/example/repo/releases/assets/9" },
+        ],
+      }))
+      .mockResolvedValueOnce(jsonResponse({ sha: "abcdef1234567890abcdef1234567890abcdef12" }));
+
+    const result = await fetchUpstream({ repo: "example/repo", channel: "stable", branch: "main", force: true });
+    expect(result).toMatchObject({
+      mandatory: true,
+      securityFix: true,
+      minSupportedVersion: "1.2.0",
+      asset: {
+        id: 7,
+        name: "xungen-1.4.0.tar.gz",
+        size: 1234,
+        digest,
+        checksumUrl: "https://api.github.com/repos/example/repo/releases/assets/8",
+        signatureUrl: "https://api.github.com/repos/example/repo/releases/assets/9",
+      },
+    });
+  });
+
   it("latest release 为 404 时回退到第一个 tag", async () => {
     vi.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(jsonResponse({ message: "Not Found" }, 404))
