@@ -35,7 +35,7 @@ A full-stack, real-implementation (no mock data) open-source platform combining 
 
 ## Latest Release
 
-**v0.3.0 (2026-11-13)** — Review genealogy data with 11 explainable checks, severity filters, search, pagination, and links to affected records. This release strengthens public-family privacy, prevents duplicate concurrent imports, and corrects GEDCOM names, dates, adoption, and parentage exchange. See the [full release history (Chinese)](docs/releases/release-notes.md).
+**v0.3.0 (2026-11-13)** — Review genealogy data with 11 explainable checks, severity filters, search, pagination, and links to affected records. This release strengthens public-family privacy, prevents concurrent submissions of the same import job from writing twice, and corrects GEDCOM names, dates, adoption, and parentage exchange. See the [full release history and upgrade notes (Chinese)](docs/releases/release-notes.md).
 
 ## Features
 
