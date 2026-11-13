@@ -39,8 +39,8 @@
 | Nginx / HTTPS 示例 | `nginx/nginx.conf`、`nginx/generate-dev-cert.sh` |
 | 环境变量示例 | `.env.example`（含 `TRUST_PROXY=false`、备份、S3/OCR 占位、Compose 变量） |
 | 备份与恢复 | `scripts/backup.mjs`（`pnpm db:backup`，双通道，已做影子库恢复演练） |
-| 测试代码与报告 | `src/tests/`、`e2e/`、`scripts/smoke*.mjs`、`scripts/security-audit.mjs`、`scripts/perf-check.mjs`、`reports/*.json`、`docs/TEST_REPORT.md` |
-| 安全审计报告 | `docs/SECURITY_AUDIT.md`、`reports/security-audit.json` |
+| 测试代码与报告 | `src/tests/`、`e2e/`、`scripts/smoke*.mjs`、`scripts/security-audit.mjs`、`scripts/perf-check.mjs`、`docs/TEST_REPORT.md`；`reports/*.json` 为本地运行生成物，不入库 |
+| 安全审计报告 | `docs/SECURITY_AUDIT.md`；机器报告由审计脚本生成到本地 `reports/security-audit.json` |
 | 部署说明 | `docs/DEPLOYMENT.md` |
 | 用户说明 | `docs/USER_GUIDE.md`、`/guide`、`/legal/privacy`、`/legal/terms` |
 | 完成与未完成清单 | 本文 |

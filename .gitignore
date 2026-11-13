@@ -16,6 +16,11 @@ next-env.d.ts
 # misc
 .DS_Store
 *.pem
+*.key
+*.p12
+*.pfx
+*.dump
+*.bak
 
 # debug
 npm-debug.log*
@@ -25,8 +30,8 @@ yarn-error.log*
 
 # env files
 .env
-.env*.local
-.env.production
+.env.*
+!.env.example
 
 # vercel
 .vercel
@@ -36,6 +41,7 @@ yarn-error.log*
 
 # local database data
 /.pgdata/
+/.pgbin/
 *.log
 
 # uploaded files (local storage, never served as static assets)
@@ -51,10 +57,12 @@ yarn-error.log*
 /test-results/
 /playwright-report/
 /coverage/
-# reports/*.json 是交付的测试/安全/性能报告，保留入库
+# 可再生成的机器报告只保留在本地；历史验收摘要记录在 docs/
+/reports/
 
 # 本地 AI 助手工作记忆（不入库）
 /.workbuddy/
+/.evolution/
 
 # 工具链产生的 0 字节临时文件（prisma generate / pnpm 供应链检查残留）
 /_tmp_*

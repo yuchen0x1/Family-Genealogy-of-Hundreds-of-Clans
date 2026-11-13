@@ -70,7 +70,7 @@
 
 ### 新增与改进
 
-- 新增 `pnpm test:cleanup` 历史测试数据清理命令：按约定名称前缀筛选，默认只预览，添加 `--apply` 后软删除。
+- 新增历史测试数据清理工具：按约定名称前缀筛选，直接运行 `node scripts/cleanup-test-data.mjs` 默认只预览，添加 `--apply` 后软删除；`pnpm test:cleanup` 快捷命令已带 `--apply`。
 - 新增 MIT `LICENSE` 和包许可证字段、贡献指南与安全问题私密报告说明。
 - 重构项目首页，新增 `README_EN.md`、19 张真实界面截图及截图生成脚本，补齐功能、快速启动、隐私与部署入口。
 - 校准部署、API、用户说明和历史验收报告中的版本、路由与测试口径；清理不应入库的生成物、旧截图和包含本机路径的内部报告。历史验收数据不代表后续版本的验证结果。
@@ -78,7 +78,7 @@
 ### 升级与兼容
 
 - 相对 v0.2.0 无新增数据库迁移。页面移除口令不会轮换已有演示账号密码，生产实例需自行处理演示账号。
-- 历史测试数据不会随升级自动清除；先检查 `pnpm test:cleanup` 的候选列表，再决定是否执行 `--apply`。
+- 历史测试数据不会随升级自动清除；先用 `node scripts/cleanup-test-data.mjs` 检查候选列表，再决定是否添加 `--apply`。`pnpm test:cleanup` 会直接软删除候选数据。
 
 [Release](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.2.1) · [完整差异](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/compare/v0.2.0...v0.2.1)
 

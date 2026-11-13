@@ -53,6 +53,10 @@ const nextConfig: NextConfig = {
       "reports/**",
       ".next.old-*/**",
       ".autonomous-upgrade/**",
+      ".evolution/**",
+      ".workbuddy/**",
+      ".pgbin/**",
+      ".env*",
     ],
   },
   async headers() {

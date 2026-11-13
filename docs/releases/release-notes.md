@@ -81,7 +81,7 @@
 ### 升级与兼容说明
 
 - 从 v0.2.0 升级无需新增数据库迁移。页面隐藏口令不会更改已有账号密码；使用过演示种子数据的生产实例仍需自行处理演示账号。
-- 历史测试数据不会随升级自动清除。先用 `pnpm test:cleanup` 预览候选记录，确认后再添加 `--apply`；清理采用软删除，避免直接销毁数据。
+- 历史测试数据不会随升级自动清除。先用 `node scripts/cleanup-test-data.mjs` 预览候选记录，确认后再添加 `--apply`。`pnpm test:cleanup` 已带 `--apply`，会直接软删除候选数据，不能用作预览命令。
 
 [下载与发布页面](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.2.1) · [与 v0.2.0 比较](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/compare/v0.2.0...v0.2.1)
 

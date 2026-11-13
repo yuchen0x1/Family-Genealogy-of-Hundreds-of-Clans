@@ -4,7 +4,12 @@ node_modules
 .git
 .gitignore
 .env
-.env*.local
+.env.*
+!.env.example
+.evolution
+.autonomous-upgrade
+.workbuddy
+.pgbin
 .pgdata
 .storage
 backups
@@ -17,3 +22,11 @@ docs
 *.log
 *.tsbuildinfo
 .DS_Store
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.dump
+**/*.bak
+public/uploads
+_tmp_*

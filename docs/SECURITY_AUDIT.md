@@ -1,6 +1,6 @@
 # 安全审计报告
 
-生成时间：2026-11-08 · 方法：对运行中的站点发起**真实 HTTP 请求**（`scripts/security-audit.mjs`）· 结果：**42 项通过 / 0 失败** · 机器可读：`reports/security-audit.json`
+生成时间：2026-11-08 · 方法：对运行中的站点发起**真实 HTTP 请求**（`scripts/security-audit.mjs`）· 历史结果：**42 项通过 / 0 失败**。机器报告由 `pnpm test:security` 生成到本地 `reports/security-audit.json`，不随仓库提交；本文保留当时的验收摘要。
 
 ## 1. 审计范围与结果
 

@@ -17,3 +17,16 @@
 
 # 锁文件在 diff 中折叠，减少评审噪音
 pnpm-lock.yaml linguist-generated=true
+
+# 本机过程记录与运行产物不进入 git archive 发布包
+.evolution export-ignore
+.autonomous-upgrade export-ignore
+.workbuddy export-ignore
+reports export-ignore
+.env export-ignore
+.env.* export-ignore
+.env.example -export-ignore
+.pgdata export-ignore
+.pgbin export-ignore
+.storage export-ignore
+backups export-ignore
