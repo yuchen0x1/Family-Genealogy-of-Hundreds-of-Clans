@@ -9,7 +9,7 @@
 寻一姓之源，续一脉之谱 —— 以史料为据、以隐私为界的中华姓氏文化与家族族谱平台
 
 [![CI](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/actions/workflows/ci.yml/badge.svg)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.2.2-8a6a35)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases)
+[![Release](https://img.shields.io/badge/release-v0.3.0-8a6a35)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2f5a58)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178c6)](https://www.typescriptlang.org)
@@ -43,7 +43,7 @@ English README: [README_EN.md](README_EN.md)
 
 ## 最新更新
 
-**v0.2.2（2026-11-13）**：稳定版在线更新改用项目专用发布包，安装前校验包大小与 SHA-256；管理员可配置强制数字签名校验，校验缺失或失败时会拒绝安装。详见[发布记录](docs/releases/release-notes.md)。
+**v0.3.0（2026-11-13）**：新增「资料体检」，集中核对年代、世代和关系异常，支持筛选、搜索与定位原记录；加强公开族谱隐私保护，防止重复导入，修正 GEDCOM 姓名、日期和亲属关系交换。详见[完整发布记录](docs/releases/release-notes.md)。
 
 ---
 
@@ -129,6 +129,7 @@ English README: [README_EN.md](README_EN.md)
 - **搜索覆盖姓 / 名 / 字号 / 别名**（pg_trgm 索引兜底超大家族）
 - 关系类型/方向/核实状态全可控，8 类冲突检测（重复关系、血缘环等）
 - **疑似重复人物核对**：三档置信度列出可疑配对并给出可读判定依据，只提示、**绝不自动合并**
+- **资料体检**（家族协作者）：11 类规则核对生卒、在世状态、世代和关系结构；提示可定位原记录，所有结论仍需人工考证
 - 软删除回收站、人物级可见性（在世非公开人物自动隐藏生卒年）
 
 ### 📜 字辈、世代与分支
@@ -154,6 +155,7 @@ English README: [README_EN.md](README_EN.md)
 
 - **7 种导出真实字节**：CSV / JSON / GEDCOM 5.5.1 / GEDCOM 7.0 / SVG / PNG / PDF
 - GEDCOM 导入带预览报告（不落库）→ 显式确认后事务写入；导入关系一律标记 `UNVERIFIED`
+- 同一导入任务并发提交只写入一次；重复人物标识会阻止导入。GEDCOM 导出逐条保留已登记亲子边，配偶不会自动变为父母；外部 `PEDI birth` 保留未知血缘子类型，需人工核对
 - 全家族**版本快照与恢复**（恢复需显式 `RESTORE` 确认）
 
 ### 👨‍👩‍👧 协作与宗亲社区

@@ -1,5 +1,7 @@
 # 测试报告
 
+> v0.3.0 功能在 2026-11-13 的首次本地验证见 [本轮升级报告](EVOLUTION_2026-11-13.md)。下文保留 2026-11-10 的历史结果，不能用来证明新体检页面已经完成浏览器验收。
+
 本报告只记录**本次实际执行并观察到结果**的验证；未执行的项目在最后一节明确列出。机器可读结果见 `reports/security-audit.json`、`reports/perf-report.json`。
 
 生成时间：2026-11-10（v0.2.0 发布轮实测）；环境：Windows 开发机，`next build` + `next start` 生产单实例，PostgreSQL 17（本地官方二进制），Redis 7，Chromium。

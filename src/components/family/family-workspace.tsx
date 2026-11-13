@@ -19,11 +19,13 @@ import { ArchivePanel } from "@/components/family/archive-panel";
 import { ImportExportPanel } from "@/components/family/import-export-panel";
 import { FamilyStatsPanel } from "@/components/family/family-stats-panel";
 import { DuplicatePanel } from "@/components/family/duplicate-panel";
+import { QualityPanel } from "@/components/family/quality-panel";
 
 const TABS = [
   { key: "graph", label: "关系图谱", icon: Network },
   { key: "stats", label: "家族统计", icon: BarChart3 },
   { key: "duplicates", label: "重复核对", icon: CopyCheck },
+  { key: "quality", label: "资料体检", icon: ShieldCheck },
   { key: "people", label: "人物管理", icon: Users },
   { key: "relations", label: "关系管理", icon: ListTree },
   { key: "generations", label: "字辈与分支", icon: BookOpen },
@@ -144,9 +146,9 @@ export function FamilyWorkspace({ familyId }: { familyId: string }) {
       </section>
 
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6">
-        {/* 窄屏横向滚动、宽屏换行：标签页已增至 11 个，只靠滚动会让页签被截断 */}
+        {/* 窄屏横向滚动，宽屏换行，保留各工作区的可发现性。 */}
         <div className="mb-5 flex gap-1 overflow-x-auto rounded-lg border border-line bg-white p-1.5 shadow-paper sm:flex-wrap sm:overflow-visible">
-          {TABS.map((t) => (
+          {TABS.filter((t) => hasAccess || !["quality", "duplicates"].includes(t.key)).map((t) => (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium transition ${tab === t.key ? "bg-navy text-white" : "text-ink-soft hover:bg-cream"}`}>
               <t.icon className="h-3.5 w-3.5" />{t.label}
@@ -182,9 +184,10 @@ export function FamilyWorkspace({ familyId }: { familyId: string }) {
               <h2 className="font-serif text-lg font-semibold text-ink">疑似重复人物核对</h2>
               <p className="text-[11px] text-graphite">只提示、不合并 · 逐条列出判定依据 · 不跨族谱比对</p>
             </div>
-            <DuplicatePanel familyId={familyId} canWrite={canWrite} />
+            {hasAccess ? <DuplicatePanel familyId={familyId} canWrite={canWrite} /> : <EmptyState title="资料核对仅向家族协作者开放" />}
           </div>
         )}
+        {tab === "quality" && (hasAccess ? <QualityPanel familyId={familyId} /> : <EmptyState title="资料核对仅向家族协作者开放" />)}
         {tab === "people" && <PersonPanel familyId={familyId} familySurname={family.surnameText} canWrite={canWrite} onChanged={refresh} />}
         {tab === "relations" && <RelationPanel familyId={familyId} canWrite={canWrite} onChanged={refresh} />}
         {tab === "generations" && <GenerationPanel familyId={familyId} canWrite={canWrite} onChanged={refresh} />}

@@ -52,7 +52,8 @@ export function RelationPanel({ familyId, canWrite, onChanged }: {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<NoticeData | null>(null);
 
-  const url = `/api/families/${familyId}/relationships?page=${page}${typeFilter ? `&type=${typeFilter}` : ""}`;
+  const [focusedId, setFocusedId] = useState(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.hash.slice(1)).get("relation") || "");
+  const url = `/api/families/${familyId}/relationships?page=${page}${typeFilter ? `&type=${typeFilter}` : ""}${focusedId ? `&relationId=${encodeURIComponent(focusedId)}` : ""}`;
   const { data, error, isLoading, mutate } = useSWR<Paged<RelationRow>>(url, fetcher, { keepPreviousData: true });
   const { data: peopleData } = useSWR<Paged<PersonOption>>(
     canWrite && (creating || editing) ? `/api/families/${familyId}/members?pageSize=100&keyword=${encodeURIComponent(memberQuery)}` : null,
@@ -158,6 +159,7 @@ export function RelationPanel({ familyId, canWrite, onChanged }: {
 
   return (
     <div className="space-y-4">
+      {focusedId && <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-gold p-3 text-sm"><span>已定位体检提示中的关系</span><Button size="sm" variant="outline" onClick={() => { setFocusedId(""); setTypeFilter(""); setPage(1); window.history.replaceState(null, "", "#tab=relations"); }}>显示全部关系</Button></div>}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="font-serif text-lg font-semibold text-ink">关系管理</h2>

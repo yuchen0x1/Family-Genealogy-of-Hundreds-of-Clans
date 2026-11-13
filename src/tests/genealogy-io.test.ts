@@ -64,6 +64,44 @@ describe("导出", () => {
 });
 
 describe("导入解析", () => {
+  it("标准 GEDCOM 姓名与日期：不颠倒姓/名，不将日当作生年", () => {
+    const parsed = parseGEDCOM("0 @I1@ INDI\n1 NAME John /Smith/\n1 BIRT\n2 DATE 12 JAN 1950\n0 TRLR");
+    expect(parsed.persons[0]).toMatchObject({ surnameText: "Smith", givenName: "John", birthYear: 1950 });
+    expect(parseGEDCOM("0 @I1@ INDI\n1 BIRT\n2 DATE 光绪十二年").persons[0].birthYear).toBeNull();
+    for (const year of [-100, 0, 1900]) {
+      expect(parseGEDCOM(buildGEDCOM({ ...bundle, members: [{ ...bundle.members[0], birthYear: year }] })).persons[0].birthYear).toBe(year);
+    }
+  });
+  it.each(["5.5.1", "7.0"] as const)("GEDCOM %s 往返不把配偶自动变成父母，保留收养及已故未知卒年", (version) => {
+    const input: ExportBundle = { ...bundle, members: bundle.members.map((p) => ({ ...p, deathYear: null, deathDateText: null, isLiving: false })), relationships: [
+      bundle.relationships[0], { ...bundle.relationships[1], type: "ADOPTION", subtype: "ADOPTIVE" },
+    ] };
+    const result = parseGEDCOM(buildGEDCOM(input, version));
+    expect(result.relations).toHaveLength(2);
+    expect(result.relations.filter((r) => r.type === "ADOPTION")).toEqual([expect.objectContaining({ fromExternalId: "I1", toExternalId: "I3", subtype: "ADOPTIVE" })]);
+    expect(result.persons.every((p) => !p.isLiving)).toBe(true);
+  });
+  it("PEDI 的收养范围只属于指定子女，外部 BIRTH 不认定为生物学血缘", () => {
+    const parsed = parseGEDCOM(["0 @P@ INDI", "1 NAME Parent /Test/", "0 @A@ INDI", "1 FAMC @F@", "2 PEDI ADOPTED", "0 @B@ INDI", "1 FAMC @F@", "2 PEDI BIRTH", "0 @F@ FAM", "1 HUSB @P@", "1 CHIL @A@", "1 CHIL @B@"].join("\n"));
+    expect(parsed.relations).toEqual([expect.objectContaining({ toExternalId: "A", type: "ADOPTION", subtype: "ADOPTIVE" }), expect.objectContaining({ toExternalId: "B", type: "PARENT_CHILD", subtype: "UNKNOWN" })]);
+  });
+  it("GEDCOM 重复标识拒绝覆盖前一记录", () => {
+    expect(() => parseGEDCOM("0 @A@ INDI\n1 NAME A /Test/\n0 @A@ INDI\n1 NAME B /Test/")).toThrow("标识重复");
+  });
+  it("保留监护与过继，未知类型不转换为血缘；缺省子类型不认定血缘", () => {
+    const result = parseJSON(JSON.stringify({ members: bundle.members, relationships: [
+      { type: "GUARDIANSHIP" }, { type: "SUCCESSION", subtype: "ADOPTIVE" },
+      { type: "UNKNOWN" }, { type: "PARENT_CHILD" }, { type: "SPOUSE", subtype: "invalid" },
+    ] }));
+    expect(result.relations.map((r) => [r.type, r.subtype])).toEqual([["GUARDIANSHIP", "UNKNOWN"], ["SUCCESSION", "ADOPTIVE"], ["PARENT_CHILD", "UNKNOWN"]]);
+    expect(result.warnings).toHaveLength(2);
+  });
+  it("人物标识重复时阻止导入，避免关系指向最后一个同标识人物", () => {
+    const parsed = parseJSON(JSON.stringify({ members: [bundle.members[0], bundle.members[0]] }));
+    const report = buildImportReport("JSON", "duplicate.json", parsed, []);
+    expect(report.ready).toBe(false);
+    expect(report.conflicts.some((c) => c.type === "DUPLICATE_ID")).toBe(true);
+  });
   it("GEDCOM 导出后可解析回相同人数", () => {
     const parsed = parseGEDCOM(buildGEDCOM(bundle));
     expect(parsed.persons).toHaveLength(3);

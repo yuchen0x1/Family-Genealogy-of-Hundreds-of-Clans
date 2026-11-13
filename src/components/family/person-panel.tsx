@@ -109,7 +109,8 @@ export function PersonPanel({ familyId, familySurname, canWrite, onChanged }: {
   const [trashOpen, setTrashOpen] = useState(false);
   const { busy, notice, setNotice, run } = useAction();
 
-  const url = `/api/families/${familyId}/members?page=${page}&keyword=${encodeURIComponent(query)}`;
+  const [focusedId, setFocusedId] = useState(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.hash.slice(1)).get("person") || "");
+  const url = `/api/families/${familyId}/members?page=${page}&keyword=${encodeURIComponent(query)}${focusedId ? `&personId=${encodeURIComponent(focusedId)}` : ""}`;
   const { data, error, isLoading, mutate } = useSWR<Paged<PersonRow>>(url, fetcher, { keepPreviousData: true });
   const { data: branches } = useSWR<Branch[]>(canWrite ? `/api/families/${familyId}/branches` : null, fetcher);
   const { data: placesData } = useSWR<Paged<Place>>(canWrite ? "/api/places?pageSize=100" : null, fetcher);
@@ -174,6 +175,7 @@ export function PersonPanel({ familyId, familySurname, canWrite, onChanged }: {
 
   return (
     <div className="space-y-4">
+      {focusedId && <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-gold p-3 text-sm"><span>已定位体检提示中的人物</span><Button size="sm" variant="outline" onClick={() => { setFocusedId(""); setQuery(""); setKeyword(""); setPage(1); window.history.replaceState(null, "", "#tab=people"); }}>显示全部人物</Button></div>}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="font-serif text-lg font-semibold text-ink">人物管理</h2>

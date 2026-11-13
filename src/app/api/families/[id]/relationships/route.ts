@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { ok, route, parseBody, getQuery, paginate, assertSameOrigin, ApiError } from "@/lib/api";
 import { relationshipCreateSchema } from "@/lib/validation";
@@ -15,9 +16,11 @@ export const GET = route<Ctx>(async (req: NextRequest, ctx) => {
   await assertFamilyRead(user, id);
   const { page, pageSize, params } = getQuery(req);
   const type = params.get("type");
+  const relationId = params.get("relationId") ? z.string().uuid().parse(params.get("relationId")) : null;
   const where = {
     familyId: id,
     deletedAt: null,
+    ...(relationId ? { id: relationId } : {}),
     ...(type ? { type: type as never } : {}),
   };
   const [rows, total] = await Promise.all([

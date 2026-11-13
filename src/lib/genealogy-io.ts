@@ -71,7 +71,7 @@ export function buildJSON(bundle: ExportBundle): string {
 function gedcomDate(p: ExportPerson, kind: "BIRT" | "DEAT"): string[] {
   const text = kind === "BIRT" ? p.birthDateText : p.deathDateText;
   const year = kind === "BIRT" ? p.birthYear : p.deathYear;
-  const value = text || (year ? String(year) : "");
+  const value = text || (year !== null && year !== undefined ? String(year) : "");
   if (!value) return [];
   return [`1 ${kind}`, `2 DATE ${value}`];
 }
@@ -79,7 +79,39 @@ function gedcomDate(p: ExportPerson, kind: "BIRT" | "DEAT"): string[] {
 /** GEDCOM 5.5.1 / 7.0 导出（LINEAGE-LINKED），UTF-8，xref 由 UUID 映射为 @I<n>@。 */
 export function buildGEDCOM(bundle: ExportBundle, version: "5.5.1" | "7.0" = "5.5.1"): string {
   const xref = new Map<string, string>();
+  const memberById = new Map(bundle.members.map((p) => [p.id, p]));
   bundle.members.forEach((p, i) => xref.set(p.id, `I${i + 1}`));
+  const familyRecords: string[][] = [];
+  const links = new Map<string, string[]>();
+  const link = (id: string, values: string[]) => {
+    const items = links.get(id) ?? [];
+    items.push(...values); links.set(id, items);
+  };
+  const seen = new Set<string>();
+  for (const r of bundle.relationships) {
+    if (!xref.has(r.fromPersonId) || !xref.has(r.toPersonId) || r.fromPersonId === r.toPersonId) continue;
+    if (!["SPOUSE", "PARENT_CHILD", "ADOPTION", "GUARDIANSHIP"].includes(r.type)) continue;
+    const key = JSON.stringify([r.type, r.subtype, ...(r.type === "SPOUSE" ? [r.fromPersonId, r.toPersonId].sort() : [r.fromPersonId, r.toPersonId])]);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const fid = `F${familyRecords.length + 1}`;
+    const from = `@${xref.get(r.fromPersonId)}@`, to = `@${xref.get(r.toPersonId)}@`;
+    const fromFemale = memberById.get(r.fromPersonId)?.gender === "FEMALE";
+    const record = [`0 @${fid}@ FAM`, `1 ${fromFemale ? "WIFE" : "HUSB"} ${from}`];
+    link(r.fromPersonId, [`1 FAMS @${fid}@`]);
+    if (r.type === "SPOUSE") {
+      record.push(`1 ${fromFemale ? "HUSB" : "WIFE"} ${to}`);
+      link(r.toPersonId, [`1 FAMS @${fid}@`]);
+    } else {
+      // 每条已登记亲子边使用单亲 FAM，绝不因某人有配偶便将其也认定为孩子的父母。
+      record.push(`1 CHIL ${to}`);
+      const pedigree = r.type === "ADOPTION" || r.subtype === "ADOPTIVE" ? "adopted" : r.subtype === "FOSTER" ? "foster" : r.subtype === "BIOLOGICAL" ? "birth" : null;
+      link(r.toPersonId, [`1 FAMC @${fid}@`, ...(pedigree ? [`2 PEDI ${version === "7.0" ? pedigree.toUpperCase() : pedigree}`] : []), `2 _XUNGEN_RELATION ${r.type} ${r.subtype}`]);
+    }
+    record.push(`1 NOTE 关系核实状态：${r.verification}`);
+    if (r.notes) record.push(`1 NOTE ${r.notes.replace(/[\r\n]+/g, " ").slice(0, 180)}`);
+    familyRecords.push(record);
+  }
   const lines: string[] = [
     "0 HEAD",
     "1 SOUR 中华寻根·百家族谱",
@@ -93,14 +125,17 @@ export function buildGEDCOM(bundle: ExportBundle, version: "5.5.1" | "7.0" = "5.
 
   for (const p of bundle.members) {
     lines.push(`0 @${xref.get(p.id)}@ INDI`);
-    lines.push(`1 NAME ${p.surnameText}/${p.givenName}/`);
+    lines.push(`1 NAME ${p.givenName} /${p.surnameText}/`);
     lines.push(`2 GIVN ${p.givenName}`);
     lines.push(`2 SURN ${p.surnameText}`);
     if (p.courtesyName) lines.push(`1 NAME ${p.courtesyName}`, "2 TYPE aka");
     if (p.alias) lines.push(`1 ALIA ${p.alias}`);
     lines.push(`1 SEX ${p.gender === "MALE" ? "M" : p.gender === "FEMALE" ? "F" : "U"}`);
     lines.push(...gedcomDate(p, "BIRT"));
-    if (!p.isLiving) lines.push(...gedcomDate(p, "DEAT"));
+    if (!p.isLiving) {
+      const death = gedcomDate(p, "DEAT");
+      lines.push(...(death.length ? death : ["1 DEAT Y"]));
+    }
     if (p.generationNumber) lines.push(`1 _GEN ${p.generationNumber}`);
     if (p.generationChar) lines.push(`1 _GENCHAR ${p.generationChar}`);
     if (p.biography) {
@@ -109,58 +144,10 @@ export function buildGEDCOM(bundle: ExportBundle, version: "5.5.1" | "7.0" = "5.
     }
     lines.push(`1 _XUNGEN_VISIBILITY ${p.visibility}`);
     if (p.verification) lines.push(`1 _XUNGEN_VERIFICATION ${p.verification}`);
+    lines.push(...(links.get(p.id) ?? []));
   }
 
-  const spouseRels = bundle.relationships.filter((r) => r.type === "SPOUSE");
-  const childRels = bundle.relationships.filter((r) => r.type === "PARENT_CHILD");
-  const famIdByParents = new Map<string, string>();
-  let famSeq = 0;
-
-  for (const r of spouseRels) {
-    const key = [r.fromPersonId, r.toPersonId].sort().join("|");
-    if (famIdByParents.has(key)) continue;
-    famIdByParents.set(key, `F${++famSeq}`);
-  }
-  // 没有配偶关系的亲子关系也要建立 FAM
-  for (const r of childRels) {
-    const father = r.fromPersonId;
-    const key = `solo|${father}|${r.toPersonId}`;
-    if (!famIdByParents.has(key)) famIdByParents.set(key, `F${++famSeq}`);
-  }
-
-  const famLines = new Map<string, string[]>();
-  const ensureFam = (id: string) => {
-    if (!famLines.has(id)) famLines.set(id, [`0 @${id}@ FAM`]);
-    return famLines.get(id)!;
-  };
-  for (const r of spouseRels) {
-    const key = [r.fromPersonId, r.toPersonId].sort().join("|");
-    const id = famIdByParents.get(key)!;
-    const f = ensureFam(id);
-    if (!f.some((l) => l.startsWith("1 HUSB"))) f.push(`1 HUSB @${xref.get(r.fromPersonId)}@`);
-    if (!f.some((l) => l.startsWith("1 WIFE"))) f.push(`1 WIFE @${xref.get(r.toPersonId)}@`);
-    if (r.notes) f.push(`1 NOTE ${r.notes.slice(0, 180)}`);
-  }
-  for (const r of childRels) {
-    let id = famIdByParents.get([r.fromPersonId, r.toPersonId].sort().join("|"));
-    if (!id) {
-      // 找以该父/母为 HUSB 或 WIFE 的 FAM
-      for (const [fid, linesOfFam] of famLines) {
-        const from = `@${xref.get(r.fromPersonId)}@`;
-        if (linesOfFam.some((l) => l === `1 HUSB ${from}` || l === `1 WIFE ${from}`)) { id = fid; break; }
-      }
-    }
-    if (!id) {
-      const key = `solo|${r.fromPersonId}|${r.toPersonId}`;
-      id = famIdByParents.get(key) ?? `F${++famSeq}`;
-      famIdByParents.set(key, id);
-      const f = ensureFam(id);
-      f.push(`1 HUSB @${xref.get(r.fromPersonId)}@`);
-    }
-    ensureFam(id).push(`1 CHIL @${xref.get(r.toPersonId)}@`);
-    if (r.subtype === "ADOPTIVE") ensureFam(id).push("2 PEDI adopted");
-  }
-  for (const f of famLines.values()) lines.push(...f);
+  for (const record of familyRecords) lines.push(...record);
   lines.push("0 TRLR");
   return `${lines.join("\r\n")}\r\n`;
 }
@@ -219,6 +206,7 @@ export function parseGEDCOM(text: string): ParsedData {
   let current: { kind: "INDI" | "FAM"; id: string } | null = null;
   for (const l of lines) {
     if (l.level === 0 && l.xref && (l.tag === "INDI" || l.tag === "FAM")) {
+      if ((l.tag === "INDI" ? indiRecords : famRecords).has(l.xref)) throw new Error(`GEDCOM 标识重复：${l.xref}，请修正文件后重试`);
       current = { kind: l.tag, id: l.xref };
       (l.tag === "INDI" ? indiRecords : famRecords).set(l.xref, []);
       continue;
@@ -229,10 +217,11 @@ export function parseGEDCOM(text: string): ParsedData {
   }
 
   const yearOf = (value: string): number | null => {
-    const m = value.match(/(-?\d{1,4})/);
-    if (!m) return null;
-    const n = Number(m[1]);
-    return n > 0 && n < 3000 ? n : null;
+    // 识别标准公历年份，不将「12 JAN 1950」的日误作年，也不猜测中文年号。
+    const normalized = value.trim().toUpperCase();
+    const iso = normalized.match(/^(-?\d{4})-\d{2}(?:-\d{2})?$/);
+    const ged = normalized.match(/^(?:(?:ABT|CAL|EST|BEF|AFT)\s+)?(?:(?:\d{1,2}\s+)?(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+)?(-?\d{1,4})(\s+B\.C\.)?$/);
+    return iso ? Number(iso[1]) : ged ? (ged[2] ? -Math.abs(Number(ged[1])) : Number(ged[1])) : null;
   };
 
   for (const [id, rows] of indiRecords) {
@@ -245,8 +234,8 @@ export function parseGEDCOM(text: string): ParsedData {
       const raw = nameRow.value;
       const m = raw.match(/^(.*?)\/(.*?)\/(.*)$/);
       if (m) {
-        surnameText = surnameText || m[1].trim();
-        givenName = givenName || `${m[2].trim()}${m[3].trim()}`.trim();
+        surnameText = surnameText || m[2].trim();
+        givenName = givenName || `${m[1].trim()} ${m[3].trim()}`.trim();
       } else if (!givenName) {
         givenName = raw.trim();
       }
@@ -274,11 +263,37 @@ export function parseGEDCOM(text: string): ParsedData {
 
   const relations: ParsedRelation[] = [];
   const xrefOf = (v: string) => v.replace(/@/g, "").trim();
+  type Pedigree = { type: string; subtype: string };
+  const pedigreeOf = (value: string): Pedigree => /adopt/i.test(value)
+    ? { type: "ADOPTION", subtype: "ADOPTIVE" }
+    : /foster/i.test(value) ? { type: "GUARDIANSHIP", subtype: "FOSTER" }
+    : { type: "PARENT_CHILD", subtype: "UNKNOWN" };
+  const pedigrees = new Map<string, Pedigree>();
+  for (const [child, rows] of indiRecords) {
+    let family: string | null = null;
+    for (const row of rows) {
+      if (row.level === 1) family = row.tag === "FAMC" ? xrefOf(row.value) : null;
+      if (!family || row.level !== 2) continue;
+      const key = JSON.stringify([family, child]);
+      if (row.tag === "PEDI") pedigrees.set(key, pedigreeOf(row.value));
+      if (row.tag === "_XUNGEN_RELATION") {
+        const [type, subtype] = row.value.split(/\s+/);
+        if (["PARENT_CHILD", "ADOPTION", "GUARDIANSHIP"].includes(type) && ["BIOLOGICAL", "ADOPTIVE", "STEP", "FOSTER", "UNKNOWN"].includes(subtype)) pedigrees.set(key, { type, subtype });
+      }
+    }
+  }
+  warnings.push("GEDCOM 的 FAMC / PEDI birth 不等于已确认生物学血缘，缺少明确本平台子类型的关系保留为 UNKNOWN，需人工核对。");
   for (const [famId, rows] of famRecords) {
     const husb = rows.find((r) => r.tag === "HUSB")?.value;
     const wife = rows.find((r) => r.tag === "WIFE")?.value;
     const children = rows.filter((r) => r.tag === "CHIL").map((r) => r.value);
-    const adoptive = rows.some((r) => r.tag === "PEDI" && /adopt|foster/i.test(r.value));
+    // 兼容本平台旧版 FAM.CHIL.PEDI；标记只作用于该子女，不能扩散到整家。
+    const legacy = new Map<string, Pedigree>();
+    let legacyChild: string | null = null;
+    for (const row of rows) {
+      if (row.level === 1) legacyChild = row.tag === "CHIL" ? xrefOf(row.value) : null;
+      if (legacyChild && row.level === 2 && row.tag === "PEDI") legacy.set(legacyChild, pedigreeOf(row.value));
+    }
     if (husb && wife) {
       relations.push({
         fromExternalId: xrefOf(husb), toExternalId: xrefOf(wife), type: "SPOUSE",
@@ -287,10 +302,10 @@ export function parseGEDCOM(text: string): ParsedData {
     }
     for (const parent of [husb, wife].filter(Boolean) as string[]) {
       for (const child of children) {
+        const pedigree = pedigrees.get(JSON.stringify([famId, xrefOf(child)])) ?? legacy.get(xrefOf(child)) ?? pedigreeOf("");
         relations.push({
           fromExternalId: xrefOf(parent), toExternalId: xrefOf(child),
-          type: adoptive ? "ADOPTION" : "PARENT_CHILD",
-          subtype: adoptive ? "ADOPTIVE" : "BIOLOGICAL",
+          ...pedigree,
           notes: `FAM ${famId} 导入，需人工核实`,
         });
       }
@@ -392,13 +407,22 @@ export function parseJSON(text: string): ParsedData {
     };
   });
   const rels = (Array.isArray(obj.relationships) ? obj.relationships : Array.isArray(obj.relations) ? obj.relations : []) as Array<Record<string, unknown>>;
-  const relations: ParsedRelation[] = rels.map((r) => ({
-    fromExternalId: String(r.fromPersonId ?? r.fromExternalId ?? ""),
-    toExternalId: String(r.toPersonId ?? r.toExternalId ?? ""),
-    type: ["PARENT_CHILD", "SPOUSE", "SIBLING", "ADOPTION"].includes(String(r.type)) ? String(r.type) : "PARENT_CHILD",
-    subtype: typeof r.subtype === "string" ? r.subtype : "BIOLOGICAL",
-    notes: "JSON 导入，需人工核实",
-  }));
+  const relations: ParsedRelation[] = rels.flatMap((r, index) => {
+    const type = String(r?.type ?? "");
+    if (!["PARENT_CHILD", "SPOUSE", "SIBLING", "ADOPTION", "SUCCESSION", "GUARDIANSHIP"].includes(type)) {
+      warnings.push(`第 ${index + 1} 条关系类型不受支持，已跳过；不会自动转换为亲子关系。`);
+      return [];
+    }
+    const defaults: Record<string, string> = { SPOUSE: "MARRIAGE", ADOPTION: "ADOPTIVE" };
+    const subtype = typeof r.subtype === "string" ? r.subtype : defaults[type] ?? "UNKNOWN";
+    if (!["BIOLOGICAL", "ADOPTIVE", "STEP", "FOSTER", "FULL", "HALF_PATERNAL", "HALF_MATERNAL", "MARRIAGE", "CONCUBINAGE", "UNKNOWN"].includes(subtype)) {
+      warnings.push(`第 ${index + 1} 条关系子类型不受支持，已跳过；请核对文件。`);
+      return [];
+    }
+    return [{ fromExternalId: String(r.fromPersonId ?? r.fromExternalId ?? ""),
+      toExternalId: String(r.toPersonId ?? r.toExternalId ?? ""), type, subtype,
+      notes: "JSON 导入，需人工核实" }];
+  });
   if (typeof obj.notice === "string") warnings.push(String(obj.notice));
   return { persons, relations, warnings };
 }
@@ -423,6 +447,8 @@ export function buildImportReport(
   const conflicts: ImportReport["conflicts"] = [];
   const existingMatches: ImportReport["existingMatches"] = [];
   const known = new Set(parsed.persons.map((p) => p.externalId));
+  const duplicateIds = known.size !== parsed.persons.length;
+  if (duplicateIds) conflicts.push({ type: "DUPLICATE_ID", detail: "文件内人物标识重复，无法确定关系指向。请为每个人物使用唯一标识后重新预览。" });
   // 预建姓名索引，避免每个导入人物线性扫描全部现有人物（大文件会打满 CPU）
   const existingByName = new Map<string, Array<{ id: string; birthYear: number | null }>>();
   for (const e of existing) {
@@ -464,7 +490,8 @@ export function buildImportReport(
       conflicts.push({ type: "SELF_RELATION", detail: `人物 ${r.fromExternalId} 与自身建立关系，将被跳过` });
       continue;
     }
-    const key = r.type === "SPOUSE" ? [r.fromExternalId, r.toExternalId].sort().join("|") : `${r.fromExternalId}>${r.toExternalId}`;
+    const ends = [r.fromExternalId, r.toExternalId];
+    const key = JSON.stringify([r.type, r.subtype, ...(r.type === "SPOUSE" || r.type === "SIBLING" ? ends.sort() : ends)]);
     if (relationKeys.has(key)) conflicts.push({ type: "DUPLICATE_RELATION", detail: `重复关系：${r.fromExternalId} → ${r.toExternalId}` });
     relationKeys.add(key);
   }
@@ -480,6 +507,6 @@ export function buildImportReport(
     format, fileName,
     counts: { persons: parsed.persons.length, relations: parsed.relations.length },
     missingFields, duplicates, conflicts, existingMatches, warnings,
-    ready: parsed.persons.length > 0,
+    ready: parsed.persons.length > 0 && !duplicateIds,
   };
 }

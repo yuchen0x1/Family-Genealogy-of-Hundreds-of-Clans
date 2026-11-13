@@ -1,6 +1,6 @@
 import { ok, route } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
-import { assertFamilyRead } from "@/lib/permissions";
+import { assertFamilyReview } from "@/lib/permissions";
 import { loadDuplicateCandidates } from "@/lib/duplicate-detection";
 
 type Ctx = { id: string };
@@ -15,7 +15,7 @@ type Ctx = { id: string };
 export const GET = route<Ctx>(async (_req, ctx) => {
   const { id } = await ctx.params;
   const user = await getCurrentUser();
-  await assertFamilyRead(user, id);
+  await assertFamilyReview(user, id);
   const report = await loadDuplicateCandidates(id);
   return ok(report, 200, { "Cache-Control": "no-store" });
 });

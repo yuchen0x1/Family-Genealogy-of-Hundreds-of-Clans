@@ -85,6 +85,13 @@ export function canViewPersonDetails(access: FamilyAccess, person: { isLiving: b
 /** 公开列表/搜索用：私有族谱一律排除；演示族谱明确标注。 */
 export const PUBLIC_FAMILY_WHERE = { visibility: Visibility.PUBLIC, deletedAt: null } as const;
 
+/** 内部核对报告包含未公开的年代与线索，仅家族协作者可读。 */
+export async function assertFamilyReview(user: AuthUser | null, familyId: string): Promise<FamilyAccess> {
+  const access = await assertFamilyRead(user, familyId);
+  if (!access.level) throw new ApiError(403, "资料核对仅向家族协作者开放", "REVIEW_FORBIDDEN");
+  return access;
+}
+
 /** 列出当前用户可见的家族 ID（用于搜索过滤）。 */
 export async function visibleFamilyIds(userId?: string): Promise<string[]> {
   if (!userId) return [];

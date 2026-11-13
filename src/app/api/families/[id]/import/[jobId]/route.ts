@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { ok, route, ApiError } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
-import { assertFamilyRead } from "@/lib/permissions";
+import { assertFamilyReview } from "@/lib/permissions";
 
 type Ctx = { id: string; jobId: string };
 
@@ -9,7 +9,7 @@ type Ctx = { id: string; jobId: string };
 export const GET = route<Ctx>(async (_req, ctx) => {
   const { id, jobId } = await ctx.params;
   const user = await getCurrentUser();
-  await assertFamilyRead(user, id);
+  await assertFamilyReview(user, id);
   const job = await prisma.importJob.findFirst({
     where: { id: jobId, familyId: id },
     select: {

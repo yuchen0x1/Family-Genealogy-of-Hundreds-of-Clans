@@ -1,6 +1,15 @@
 # API 文档
 
-基址：开发环境 `http://localhost:3000/api`，生产为 `https://<域名>/api`。共 **63 个 Route Handlers**，全部为真实数据库读写。
+基址：开发环境 `http://localhost:3000/api`，生产为 `https://<域名>/api`。接口实现位于 `src/app/api`，当前有 69 个 Route Handler 文件（2026-11-13）。
+
+## v0.3.0 接口变更（2026-11-13）
+
+- `GET /families/:id/quality`：仅 OWNER / ADMIN / EDITOR / VIEWER 家族协作者可读；平台管理员身份不绕过家族权限。返回 `scanned`、`counts`（ERROR / WARNING / INFO）、`totalIssues`、`issues`、`truncated`、`issueLimit`、`checkedAt`。每个问题包含规则码、说明、人物 ID/姓名及可选关系 ID。只读，不存入快照或改写资料；响应 `private, no-store`。
+- 体检使用同一数据库读取快照；最多 10,000 人 / 30,000 条关系，超出返回 422 `QUALITY_LIMIT_EXCEEDED`，不返回可能误判的局部图。问题完整计数，最多返回 500 条（优先结构异常）。已否定关系不参与结构检查。
+- `GET /families/:id/duplicates`、`GET /families/:id/import`、`GET /families/:id/import/:jobId`：公开访客返回 403 `REVIEW_FORBIDDEN`，协作者权限保持。报告包含内部年代、别名或待导入线索。
+- 人物列表可加 `personId=<uuid>`；关系列表可加 `relationId=<uuid>`。仍与 familyId 和 deletedAt 联合过滤，跨族谱 ID 返回空列表，格式错误返回 422。
+- 图谱返回年代统一遵守人物详情权限；`up=0&down=0` 保留零层语义，响应不缓存。
+- 导入 commit 在事务内将 QUEUED 条件更新为 PROCESSING，竞争失败返回 409 `JOB_ALREADY_DONE`，中途失败整体回滚为 QUEUED。重复外部人物 ID 返回 409 `DUPLICATE_ID`（预览阶段会先阻止）。这不等于所有家族写入均已实现并发控制。
 
 ## 1. 通用约定
 

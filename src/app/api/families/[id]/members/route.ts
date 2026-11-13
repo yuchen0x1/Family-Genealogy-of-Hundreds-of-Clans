@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { ok, route, parseBody, getQuery, paginate, assertSameOrigin, ApiError } from "@/lib/api";
 import { memberCreateSchema } from "@/lib/validation";
@@ -16,6 +17,7 @@ export const GET = route<Ctx>(async (req: NextRequest, ctx) => {
   const access = await assertFamilyRead(user, id);
   const { page, pageSize, params } = getQuery(req);
   const keyword = (params.get("keyword") || "").trim();
+  const personId = params.get("personId") ? z.string().uuid().parse(params.get("personId")) : null;
   /**
    * 关键词同时匹配姓、名、字号与别名。
    *
@@ -29,6 +31,7 @@ export const GET = route<Ctx>(async (req: NextRequest, ctx) => {
   const where = {
     familyId: id,
     deletedAt: null,
+    ...(personId ? { id: personId } : {}),
     ...(keyword
       ? {
           OR: [

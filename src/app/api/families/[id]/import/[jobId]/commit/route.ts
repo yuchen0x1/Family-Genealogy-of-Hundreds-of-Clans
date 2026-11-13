@@ -42,6 +42,8 @@ export const POST = route<Ctx>(async (req: NextRequest, ctx) => {
   const persons = payload?.persons ?? [];
   const candidateRelations = payload?.relations ?? [];
   if (!persons.length) throw new ApiError(400, "导入任务中没有人物数据", "EMPTY_PAYLOAD");
+  if (new Set(persons.map((p) => p.externalId)).size !== persons.length)
+    throw new ApiError(409, "文件内人物标识重复，请修正后重新预览", "DUPLICATE_ID");
 
   const skip = new Set(body.skipRows ?? []);
   const existingRelations = await prisma.familyRelationship.findMany({
@@ -70,6 +72,13 @@ export const POST = route<Ctx>(async (req: NextRequest, ctx) => {
 
   const skipped: Array<{ index: number; reason: string }> = [];
   const result = await prisma.$transaction(async (tx) => {
+    // 条件更新取得任务行锁；并发请求等待后会重新判断 QUEUED，只有一个能写入。
+    // 与人物/关系处于同一事务，失败时状态也回滚，仍可重试。
+    const claimed = await tx.importJob.updateMany({
+      where: { id: jobId, familyId: id, status: "QUEUED" },
+      data: { status: "PROCESSING" },
+    });
+    if (claimed.count !== 1) throw new ApiError(409, "该导入任务已执行或正在处理中", "JOB_ALREADY_DONE");
     const idMap = new Map<string, string>();
     let createdPersons = 0;
     for (let i = 0; i < persons.length; i++) {

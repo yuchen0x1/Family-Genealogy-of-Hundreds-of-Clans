@@ -9,7 +9,7 @@
 Trace the origin of a surname, continue the memory of a family — a Chinese surname-culture and genealogy platform built on documented sources and strict privacy boundaries.
 
 [![CI](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/actions/workflows/ci.yml/badge.svg)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.2.2-8a6a35)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases)
+[![Release](https://img.shields.io/badge/release-v0.3.0-8a6a35)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2f5a58)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178c6)](https://www.typescriptlang.org)
@@ -35,7 +35,7 @@ A full-stack, real-implementation (no mock data) open-source platform combining 
 
 ## Latest Release
 
-**v0.2.2 (2026-11-13)** — Stable-channel updates now use the project's dedicated release archive and verify its size and SHA-256 before installation. Self-hosted instances can require detached-signature verification; if required verification is missing or fails, the update is rejected. See the [full release history (Chinese)](docs/releases/release-notes.md).
+**v0.3.0 (2026-11-13)** — Review genealogy data with 11 explainable checks, severity filters, search, pagination, and links to affected records. This release strengthens public-family privacy, prevents duplicate concurrent imports, and corrects GEDCOM names, dates, adoption, and parentage exchange. See the [full release history (Chinese)](docs/releases/release-notes.md).
 
 ## Features
 

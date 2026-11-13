@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { ok, route, assertSameOrigin, ApiError } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
-import { assertFamilyRead, assertFamilyWrite } from "@/lib/permissions";
+import { assertFamilyReview, assertFamilyWrite } from "@/lib/permissions";
 import { validateUpload } from "@/lib/upload";
 import { parseGEDCOM, parseCSV, parseJSON, buildImportReport, type ParsedData } from "@/lib/genealogy-io";
 import { audit } from "@/lib/audit";
@@ -14,7 +14,7 @@ type Ctx = { id: string };
 export const GET = route<Ctx>(async (_req, ctx) => {
   const { id } = await ctx.params;
   const user = await getCurrentUser();
-  await assertFamilyRead(user, id);
+  await assertFamilyReview(user, id);
   const jobs = await prisma.importJob.findMany({
     where: { familyId: id }, orderBy: { createdAt: "desc" }, take: 20,
     select: { id: true, format: true, fileName: true, status: true, createdAt: true, completedAt: true, report: true },

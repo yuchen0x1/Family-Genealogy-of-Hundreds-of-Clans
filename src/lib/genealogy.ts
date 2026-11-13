@@ -215,6 +215,7 @@ export async function buildPartialGraph(
   down = 2,
   hasAccess = true,
 ) {
+  const access: FamilyAccess = { level: hasAccess ? "VIEWER" : null, isOwner: false, visibility: "PUBLIC", isDemo: false };
   const members = await prisma.familyMember.findMany({
     where: { familyId, deletedAt: null },
     select: {
@@ -239,7 +240,7 @@ export async function buildPartialGraph(
   const kinshipPeople: KinshipPerson[] = members.map((m) => ({
     id: m.id,
     gender: m.gender as KinshipPerson["gender"],
-    birthYear: m.birthYear,
+    birthYear: canViewPersonDetails(access, m) ? m.birthYear : null,
     generationNumber: m.generationNumber,
   }));
   const kinshipRelations: KinshipRelation[] = relations.map((r) => ({
@@ -282,8 +283,8 @@ export async function buildPartialGraph(
       id: m.id,
       name: `${m.surnameText}${m.givenName}`,
       gender: m.gender,
-      birthYear: m.birthYear,
-      deathYear: m.deathYear,
+      birthYear: canViewPersonDetails(access, m) ? m.birthYear : null,
+      deathYear: canViewPersonDetails(access, m) ? m.deathYear : null,
       isLiving: m.isLiving,
       generationNumber: m.generationNumber,
       generationChar: m.generationChar,
