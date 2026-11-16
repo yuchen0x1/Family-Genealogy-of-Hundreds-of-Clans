@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { ok, route } from "@/lib/api";
 import { cacheHealth } from "@/lib/cache";
+import { storageHealth } from "@/lib/storage";
 
 /**
  * 部署健康检查（供 Nginx / Docker healthcheck / 运维探针使用）。
@@ -19,9 +20,11 @@ export const GET = route(async () => {
     console.error("[health] database check failed");
   }
   const cache = await cacheHealth();
+  const storage = await storageHealth();
+  const ready = database && storage !== "unavailable" && storage !== "unsupported";
   return ok(
-    { status: database ? "ok" : "degraded", database, cache },
-    database ? 200 : 503,
+    { status: ready ? "ok" : "degraded", database, cache, storage },
+    ready ? 200 : 503,
     { "Cache-Control": "no-store" },
   );
 });

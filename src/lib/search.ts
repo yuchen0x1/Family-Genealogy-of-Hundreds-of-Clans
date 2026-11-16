@@ -221,7 +221,12 @@ export async function searchAll(
     const where: Prisma.FamilyMemberWhereInput = {
       deletedAt: null,
       familyId: { in: allowedIds.length ? allowedIds : ["00000000-0000-0000-0000-000000000000"] },
-      OR: [{ givenName: insensitive(query) }, { courtesyName: insensitive(query) }, { alias: insensitive(query) }],
+      OR: [
+        { surnameText: insensitive(query) },
+        { givenName: insensitive(query) },
+        { courtesyName: insensitive(query) },
+        { alias: insensitive(query) },
+      ],
     };
     if (myFamilyIds.length === 0) {
       // 匿名/无私有家族权限：公开族谱中只显示已主动公开或已故人物

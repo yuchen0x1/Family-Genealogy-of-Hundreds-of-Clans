@@ -34,6 +34,9 @@ async function timed(label, url, opts = {}) {
 
 async function main() {
   console.log(`\n[perf-check] 目标 ${BASE}\n`);
+  const healthResponse = await fetch(`${BASE}/api/health`).catch(() => null);
+  const healthBody = healthResponse ? await healthResponse.json().catch(() => ({})) : {};
+  const cacheMode = healthBody?.data?.cache ?? "unknown-cache";
   const endpoints = [
     ["首页", "/"], ["姓氏列表", "/surnames"], ["姓氏详情", "/surnames/%E6%9D%8E"],
     ["历史寻根", "/roots"], ["族谱中心", "/families"], ["宗亲社区", "/community"],
@@ -119,14 +122,14 @@ async function main() {
   const report = {
     generatedAt: new Date().toISOString(),
     baseUrl: BASE,
-    environment: "本地开发单实例（Next.js dev + 本地 PostgreSQL 17 + Redis）",
+    environment: process.env.PERF_ENVIRONMENT || `本地单实例（Next.js + 本地 PostgreSQL 17 + ${cacheMode}）`,
     warmup: { endpoints: endpoints.length, note: "每个端点预热 1 次，排除 dev 模式首次按需编译耗时；统计只含稳态请求。" },
     thresholds: { sequentialP95Ms: 5000, graphNodeCap: 200 },
     sequential,
     concurrent: { ...cs, total: concurrentSamples.length, failed },
     graphLimit,
     exportTimes,
-    note: "开发机基线：预热后统计，仍为 dev 模式，生产需以 next build + next start 重新测量。图谱样本为 seed 公开族谱（节点数少），局部加载上限由服务端 buildPartialGraph 的 MAX_GRAPH_NODES=200 控制，不以单次样本节点数作为上限验证。",
+    note: "预热后统计；实例模式由 PERF_ENVIRONMENT 或运行方式决定，生产仍应按真实并发量复测。图谱样本为 seed 公开族谱（节点数少），局部加载上限由服务端 buildPartialGraph 的 MAX_GRAPH_NODES=200 控制，不以单次样本节点数作为上限验证。",
   };
   mkdirSync(path.dirname(OUT), { recursive: true });
   writeFileSync(OUT, JSON.stringify(report, null, 2), "utf8");

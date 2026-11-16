@@ -14,7 +14,9 @@ export default defineConfig({
   retries: 0,
   reporter: [["list"]],
   use: {
-    baseURL: process.env.E2E_BASE_URL || "http://127.0.0.1:3000",
+    // Keep browser origin aligned with the app's CSRF allow-list. CI can still
+    // override this explicitly when it provisions a different host/port.
+    baseURL: process.env.E2E_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     locale: "zh-CN",
@@ -26,7 +28,7 @@ export default defineConfig({
   ],
   webServer: {
     command: "pnpm dev",
-    url: process.env.E2E_BASE_URL || "http://127.0.0.1:3000",
+    url: process.env.E2E_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
     reuseExistingServer: true,
     timeout: 120_000,
   },

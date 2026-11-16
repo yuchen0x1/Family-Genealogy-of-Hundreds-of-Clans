@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterEach } from "vitest";
 import {
   hashPassword, verifyPassword, hashToken, randomToken,
   anonymizeIp, encryptSensitive, decryptSensitive, sha256,
@@ -7,6 +7,15 @@ import {
 beforeAll(() => {
   process.env.ENCRYPTION_KEY = "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
   process.env.SESSION_SECRET = "test-secret";
+});
+
+const originalNodeEnv = process.env.NODE_ENV;
+const originalSessionSecret = process.env.SESSION_SECRET;
+
+afterEach(() => {
+  (process.env as Record<string, string | undefined>).NODE_ENV = originalNodeEnv;
+  if (originalSessionSecret === undefined) delete process.env.SESSION_SECRET;
+  else process.env.SESSION_SECRET = originalSessionSecret;
 });
 
 describe("密码哈希", () => {
@@ -45,6 +54,12 @@ describe("token 与 IP 摘要", () => {
     expect(a).toBe(anonymizeIp("203.0.113.7"));
     expect(a).not.toContain("203.0.113.7");
     expect(a).not.toBe(anonymizeIp("203.0.113.8"));
+  });
+
+  it("生产环境缺少 SESSION_SECRET 时拒绝使用开发默认值", () => {
+    (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+    delete process.env.SESSION_SECRET;
+    expect(() => anonymizeIp("203.0.113.7")).toThrow("SESSION_SECRET");
   });
 
   it("sha256 稳定", () => {

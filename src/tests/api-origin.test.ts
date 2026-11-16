@@ -1,6 +1,6 @@
 import { describe, expect, it, afterEach } from "vitest";
 import { NextRequest } from "next/server";
-import { ApiError, assertSameOrigin } from "@/lib/api";
+import { ApiError, assertSameOrigin, ok, route } from "@/lib/api";
 
 const originalSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 
@@ -32,5 +32,17 @@ describe("assertSameOrigin", () => {
     process.env.NEXT_PUBLIC_SITE_URL = "https://genealogy.example";
     expect(() => assertSameOrigin(request("null"))).toThrow(ApiError);
     expect(() => assertSameOrigin(request("https://attacker.example"))).toThrow(ApiError);
+  });
+});
+
+describe("route 路径参数防线", () => {
+  it("非法 UUID 在进入 Prisma 前返回 400", async () => {
+    const wrapped = route<{ id: string }>(async () => ok({ reached: true }));
+    const response = await wrapped(
+      new NextRequest("https://genealogy.example/api/families/not-a-uuid"),
+      { params: Promise.resolve({ id: "not-a-uuid" }) },
+    );
+    expect(response.status).toBe(400);
+    expect((await response.json()).error.code).toBe("INVALID_ID");
   });
 });

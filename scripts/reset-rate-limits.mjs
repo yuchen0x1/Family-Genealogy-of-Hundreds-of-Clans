@@ -5,8 +5,11 @@
  * 生产环境请勿执行；也不要把此脚本加入任何自动化部署流程。
  */
 import Redis from "ioredis";
+import { mkdir, utimes, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 const url = process.env.REDIS_URL || "redis://127.0.0.1:6379";
+const resetFile = process.env.RATE_LIMIT_RESET_FILE || path.join(process.cwd(), ".storage", ".rate-limit-reset");
 const r = new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 1 });
 
 try {
@@ -15,7 +18,13 @@ try {
   if (keys.length) await r.del(...keys);
   console.log(`[reset-rate-limits] 已清理 ${keys.length} 个限流计数键（${url}）`);
 } catch (err) {
-  console.warn(`[reset-rate-limits] Redis 不可用，跳过：${err instanceof Error ? err.message : String(err)}`);
+  // 开发服务器的进程内 fallback 计数不在 Redis 中；写入标记文件让同一进程
+  // 在下一次请求时清理，避免连续冒烟套件互相污染。
+  await mkdir(path.dirname(resetFile), { recursive: true });
+  await writeFile(resetFile, `${Date.now()}\n`, "utf8");
+  const now = new Date();
+  await utimes(resetFile, now, now);
+  console.warn(`[reset-rate-limits] Redis 不可用，已写入进程内限流清理标记：${resetFile}（${err instanceof Error ? err.message : String(err)}）`);
 } finally {
   r.disconnect();
 }

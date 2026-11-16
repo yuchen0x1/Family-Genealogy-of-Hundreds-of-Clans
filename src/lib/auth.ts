@@ -33,7 +33,15 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       },
     },
   });
-  if (!session || session.revokedAt || session.expiresAt.getTime() < Date.now()) return null;
+  if (!session || session.revokedAt) return null;
+  if (session.expiresAt.getTime() < Date.now()) {
+    // 过期会话不再参与认证，同时异步标记为 revoked，避免长期累积不可用记录。
+    void prisma.userSession.updateMany({
+      where: { id: session.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    }).catch(() => undefined);
+    return null;
+  }
   if (session.user.status !== "ACTIVE" || session.user.deletedAt) return null;
 
   const roles = session.user.roles.map((r) => r.role.key);

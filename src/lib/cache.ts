@@ -4,11 +4,34 @@
  */
 import Redis from "ioredis";
 import { hashToken } from "./crypto";
+import { stat } from "node:fs/promises";
+import path from "node:path";
 
 type Entry = { value: string; expires: number };
 const memory = new Map<string, Entry>();
 const counters = new Map<string, { count: number; resetAt: number }>();
 const MEMORY_MAX = 2000;
+// Redis 不可用时，测试/开发进程内的计数无法被另一个 CLI 进程直接访问。
+// 通过一个仅用于本地测试的文件时间戳实现跨进程清理；生产中没有人需要写入该文件，
+// 每秒最多检查一次，正常请求不会产生逐请求磁盘 I/O。
+const RATE_LIMIT_RESET_FILE = process.env.RATE_LIMIT_RESET_FILE || path.join(process.cwd(), ".storage", ".rate-limit-reset");
+let lastResetCheckAt = 0;
+let lastResetMarker = 0;
+
+async function maybeResetMemoryLimits() {
+  const now = Date.now();
+  if (now - lastResetCheckAt < 1000) return;
+  lastResetCheckAt = now;
+  try {
+    const marker = (await stat(/* turbopackIgnore: true */ RATE_LIMIT_RESET_FILE)).mtimeMs;
+    if (marker > lastResetMarker) {
+      counters.clear();
+      lastResetMarker = marker;
+    }
+  } catch {
+    // 标记文件不存在是正常状态。
+  }
+}
 
 let redis: Redis | null = null;
 let redisFailed = false;
@@ -88,6 +111,7 @@ export async function cacheInvalidate(prefix: string): Promise<void> {
 
 /** 简单限流：window 秒内最多 limit 次。Redis 不可用时用进程内计数。 */
 export async function rateLimit(key: string, limit: number, windowSeconds: number): Promise<{ allowed: boolean; remaining: number }> {
+  await maybeResetMemoryLimits();
   const hashed = hashToken(key).slice(0, 24);
   const now = Date.now();
   const r = getRedis();

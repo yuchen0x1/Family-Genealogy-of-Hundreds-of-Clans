@@ -39,9 +39,18 @@ export function randomToken(bytes = 32): string {
   return randomBytes(bytes).toString("base64url");
 }
 
+function sessionSecret(): string {
+  const configured = process.env.SESSION_SECRET?.trim();
+  if (configured) return configured;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET 必须在生产环境配置，禁止使用开发默认值");
+  }
+  return "xungen-dev-only";
+}
+
 /** IP 脱敏：只保存带密钥的 HMAC，避免日志留存原始 IP。 */
 export function anonymizeIp(ip: string): string {
-  return createHmac("sha256", process.env.SESSION_SECRET || "xungen").update(ip).digest("hex");
+  return createHmac("sha256", sessionSecret()).update(ip).digest("hex");
 }
 
 function encryptionKey(): Buffer {

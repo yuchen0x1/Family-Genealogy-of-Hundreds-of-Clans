@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { ok, route, parseBody, getQuery, paginate, assertSameOrigin, ApiError } from "@/lib/api";
 import { memberCreateSchema } from "@/lib/validation";
 import { getCurrentUser } from "@/lib/auth";
-import { assertFamilyRead, assertFamilyWrite } from "@/lib/permissions";
+import { assertFamilyRead, assertFamilyWrite, normalizePersonVisibility } from "@/lib/permissions";
 import { encryptSensitive } from "@/lib/crypto";
 import { publicPersonView, createVersionSnapshot } from "@/lib/genealogy";
 import { audit } from "@/lib/audit";
@@ -67,7 +67,7 @@ export const POST = route<Ctx>(async (req: NextRequest, ctx) => {
     if (!branch) throw new ApiError(400, "分支不属于该家族", "INVALID_BRANCH");
   }
   // 在世人物默认严格保护，忽略前端要求的 PUBLIC，除非明确由家族管理者设置为 FAMILY
-  const visibility = data.isLiving && data.visibility === "PUBLIC" ? "FAMILY" : data.visibility;
+  const visibility = normalizePersonVisibility(data.isLiving, data.visibility);
 
   const member = await prisma.familyMember.create({
     data: {

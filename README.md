@@ -9,7 +9,7 @@
 寻一姓之源，续一脉之谱 —— 以史料为据、以隐私为界的中华姓氏文化与家族族谱平台
 
 [![CI](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/actions/workflows/ci.yml/badge.svg)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.3.0-8a6a35)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases)
+[![Release](https://img.shields.io/badge/release-v0.3.1-8a6a35)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2f5a58)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178c6)](https://www.typescriptlang.org)
@@ -43,7 +43,7 @@ English README: [README_EN.md](README_EN.md)
 
 ## 最新更新
 
-**v0.3.0（2026-11-13）**：新增「资料体检」，通过 11 类提示核对年代、世代和关系异常，支持筛选、搜索与定位原记录；加强公开族谱隐私保护，防止同一导入任务并发重复写入，修正 GEDCOM 姓名、日期和亲属关系交换。各版本功能、修复及升级注意事项见[完整发布记录](docs/releases/release-notes.md)。
+**v0.3.1（2026-11-16）**：加强在世人物隐私、生产密钥与 API 参数边界，补齐姓氏人物检索，增加存储健康检查和构建产物隔离，修复 Redis fallback 连续测试限流清理，并让浏览器 E2E 与配置的站点 origin 一致。完整审计、竞品研究与升级边界见 [PROJECT_AUDIT.md](PROJECT_AUDIT.md) 和[完整发布记录](docs/releases/release-notes.md)。
 
 ---
 
@@ -207,7 +207,7 @@ flowchart LR
         UI["React 19 + Tailwind v4<br/>SWR 轮询 / SVG 画布 / ECharts"]
     end
     subgraph app["Next.js 16（App Router）"]
-        R["68 个 Route Handlers<br/>Zod 校验 · RBAC · 限流 · 审计"]
+        R["69 个 Route Handlers<br/>Zod 校验 · RBAC · 限流 · 审计"]
         subgraph biz["业务层 src/lib"]
             K["亲属称谓引擎"]
             G["图谱布局"]
@@ -238,11 +238,11 @@ flowchart LR
 | 层 | 选型（版本来自 `package.json` 与实测构建） |
 | --- | --- |
 | 前端 | Next.js 16.4.5（App Router / Turbopack）、React 19.3.1、TypeScript 6.0.3、Tailwind CSS v4、SWR、ECharts |
-| 服务端 | Next.js Route Handlers ×68、Zod、scrypt 密码哈希、AES-256-GCM 字段加密 |
+| 服务端 | Next.js Route Handlers ×69、Zod、scrypt 密码哈希、AES-256-GCM 字段加密 |
 | 数据库 | PostgreSQL 17、Prisma 6.19（48 model / 6 迁移）、`pg_trgm` + 中文 2-gram + 拼音检索键 |
 | 缓存 | Redis（ioredis，未连接自动降级进程内缓存/限流） |
 | 存储 | 本地非公开目录（默认）/ S3 兼容对象存储（需配置凭据） |
-| 测试 | Vitest（20 文件 / 225 项）、5 套 HTTP 冒烟（323 项）、Playwright E2E（11 项）、安全审计 42 项、性能基线 |
+| 测试 | Vitest（24 文件通过 / 2 跳过，243 passed）、5 套 HTTP 冒烟（323 项）、Playwright E2E（11 passed / 1 skipped）、安全审计 42 项、性能基线 |
 | 部署 | Dockerfile、docker-compose（app + nginx + postgres + redis + updater sidecar）、Nginx TLS 终止、systemd 单元 |
 
 ## 🚀 快速开始
@@ -256,7 +256,7 @@ flowchart LR
 | **B. 下载压缩包** | 打开 [Releases](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/latest) → `Assets` 下的 **Source code (zip)** | 不想用 git 的场景 |
 | **C. Docker 一键起** | 解压/克隆后 `docker compose up -d --build` | 有 Docker 的服务器 |
 
-想确认拿到的是最新版：`package.json` 的 `version` 应等于 [最新 Release](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/latest) 的 tag 去掉 `v`（当前 `0.2.2`）。
+想确认拿到的是最新版：`package.json` 的 `version` 应等于 [最新 Release](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/latest) 的 tag 去掉 `v`（当前源码版本 `0.3.1`）。
 
 **环境要求**：Node.js ≥ 22、pnpm 11（Corepack）。Windows / macOS / Linux 均可；Windows 优先用 PowerShell。
 
@@ -310,7 +310,11 @@ docker compose up -d --build
 | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | 用户操作说明（建谱、人物、关系、档案、社区） |
 | [docs/API.md](docs/API.md) | 全部 API、权限模型与错误码 |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | 部署、HTTPS、备份恢复、升级与在线更新排障 |
-| [docs/TEST_REPORT.md](docs/TEST_REPORT.md) | 2026-11-10 发布轮实测：601 项自动化断言全绿 |
+| [PROJECT_AUDIT.md](PROJECT_AUDIT.md) | 2026-11-16 源码、架构、风险和本机验收审计 |
+| [COMPETITOR_ANALYSIS.md](COMPETITOR_ANALYSIS.md) | 18 个开源项目研究与能力矩阵 |
+| [UPGRADE_ROADMAP.md](UPGRADE_ROADMAP.md) | EV-001～EV-051 升级路线图、验收标准与优先级 |
+| [UPGRADE_REPORT.md](UPGRADE_REPORT.md) | 本轮代码变更、测试证据和未完成边界 |
+| [docs/TEST_REPORT.md](docs/TEST_REPORT.md) | 2026-11-16 最新本机验证结果 |
 | [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) | 安全设计、42 项审计结果与遗留项论证 |
 | [docs/COMPLETION.md](docs/COMPLETION.md) | 已实现 / 未验证 / 未完成清单（不伪造成功） |
 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
@@ -322,7 +326,7 @@ docker compose up -d --build
 ```bash
 pnpm typecheck            # TypeScript 严格模式
 pnpm lint                 # ESLint
-pnpm test                 # Vitest 单元测试（20 文件 / 225 项）
+pnpm test                 # Vitest 单元测试（24 文件通过 / 2 跳过；243 passed / 21 skipped）
 pnpm test:smoke           # 核心后端 HTTP 冒烟（28）
 pnpm test:smoke:ui        # 族谱前端依赖接口（55）
 pnpm test:smoke:archive   # 档案中心 + 导入导出（73）
@@ -336,20 +340,22 @@ pnpm test:reset-limits    # 清理限流计数（连续跑测试之间执行）
 pnpm test:cleanup         # 软删除冒烟/E2E 留下的测试族谱与帖子（可恢复）
 ```
 
-2026-11-10 发布轮实测汇总（生产构建实例，全部真实执行，详见 [docs/TEST_REPORT.md](docs/TEST_REPORT.md)）：
+2026-11-16 本机最终验收汇总（真实执行，详见 [PROJECT_AUDIT.md](PROJECT_AUDIT.md) 与 [docs/TEST_REPORT.md](docs/TEST_REPORT.md)）：
 
 | 类别 | 结果 |
 | --- | --- |
-| 自动化断言合计 | **601 项，0 失败**（225 单测 + 323 冒烟 + 42 安全审计 + 11 E2E） |
-| 生产构建 | 92 条路由（52 静态 / 40 动态：68 个 API + 20 个页面 + robots/sitemap） |
-| 备份恢复演练 | 48 表 / 4369 行快照 → 影子库恢复行数独立核对一致 |
-| 性能基线 | 11 端点 p95 ≤ 21ms；60 并发 0 失败；异常端点 0 |
+| Vitest | **243 passed / 21 skipped**（24 个文件通过，2 个文件跳过） |
+| HTTP 冒烟 | **323/323**（28 + 55 + 73 + 93 + 74） |
+| Playwright | **11 passed / 1 skipped**（桌面 + Chromium 移动模拟） |
+| 安全审计 | **42/42**；仅 CSP `unsafe-inline` 遗留告警 |
+| 生产构建 | **通过**；69 个 API、20 个页面及框架元路由，无上传目录 trace 警告 |
+| 性能基线 | **通过**；60 并发 0 失败，图谱与 5 种导出端点完成基线 |
 
 CI（GitHub Actions）：push / PR 自动跑 lint + typecheck + 单测，并在 PostgreSQL 17 服务容器上完成生产构建与冒烟；推送 `v*` tag 时在全部通过后自动创建 GitHub Release（正文取自 CHANGELOG 对应段落）。冒烟与审计类脚本需要站点已在 `http://localhost:3000` 运行（可用 `SMOKE_BASE_URL` 指向其他环境）。
 
 ## 🗺️ 项目路线图
 
-**已实现**（截至 v0.2.2，全部有测试或演练支撑）
+**已实现**（截至源码 v0.3.0，本轮审计与路线图见 [UPGRADE_REPORT.md](UPGRADE_REPORT.md)）
 百家姓知识库 · 历史寻根与迁徙地图 · 族谱创建与协作 · 人物/关系/字辈 · 四视图图谱 · 亲属称谓 · 档案中心 · 7 种导出 / GEDCOM 导入 · 版本快照恢复 · 社区 · 管理后台 · 审计日志 · 在线更新（含更新提醒） · 备份恢复 · Docker/Compose/Nginx 配置
 
 **正在完善**

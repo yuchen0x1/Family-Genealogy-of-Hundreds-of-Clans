@@ -1,31 +1,31 @@
 # 测试报告
 
-> v0.3.0 功能在 2026-11-13 的首次本地验证见 [本轮升级报告](EVOLUTION_2026-11-13.md)。下文保留 2026-11-10 的历史结果，不能用来证明新体检页面已经完成浏览器验收。
+> 最新本机回归：2026-11-16。历史发布轮数字保留在下文背景中，不覆盖本轮结果；项目级审计见 [PROJECT_AUDIT.md](../PROJECT_AUDIT.md)，升级交付见 [UPGRADE_REPORT.md](../UPGRADE_REPORT.md)。
 
 本报告只记录**本次实际执行并观察到结果**的验证；未执行的项目在最后一节明确列出。机器报告由 `pnpm test:security`、`pnpm test:perf` 生成到本地 `reports/`，不随仓库提交；本文保留历史验收摘要。
 
-生成时间：2026-11-10（v0.2.0 发布轮实测）；环境：Windows 开发机，`next build` + `next start` 生产单实例，PostgreSQL 17（本地官方二进制），Redis 7，Chromium。
+生成时间：2026-11-16；环境：Windows 开发机，`next build` + `next start` 生产单实例，PostgreSQL 17，本地缓存 fallback，Chromium。
 
 ## 1. 汇总
 
 | 类别 | 命令 | 断言数 | 结果 |
 | --- | --- | --- | --- |
-| 单元测试 | `pnpm test` | 20 文件 / 225 通过 + 2 跳过 | 全部通过 |
-| 核心后端冒烟 | `pnpm test:smoke` | 27 | 全部通过 |
-| 族谱前端依赖接口 + 页面可达性 | `pnpm test:smoke:ui` | 54 | 全部通过 |
-| 档案中心 + 导入导出 | `pnpm test:smoke:archive` | 71 | 全部通过 |
-| 宗亲社区 + 用户中心 | `pnpm test:smoke:community` | 89 | 全部通过 |
-| 管理后台 + 隐私边界 + 系统更新 | `pnpm test:smoke:admin` | 73 | 全部通过 |
+| 单元测试 | `pnpm test` | 24 文件通过、2 文件跳过；243 passed / 21 skipped | 全部通过 |
+| 核心后端冒烟 | `pnpm test:smoke` | 28 | 全部通过 |
+| 族谱前端依赖接口 + 页面可达性 | `pnpm test:smoke:ui` | 55 | 全部通过 |
+| 档案中心 + 导入导出 | `pnpm test:smoke:archive` | 73 | 全部通过 |
+| 宗亲社区 + 用户中心 | `pnpm test:smoke:community` | 93 | 全部通过 |
+| 管理后台 + 隐私边界 + 系统更新 | `pnpm test:smoke:admin` | 74 | 全部通过 |
 | 浏览器 E2E（桌面 + 移动端） | `pnpm test:e2e` | 11 | 全部通过 |
 | 安全审计（真实 HTTP） | `pnpm test:security` | 42 | 全部通过（遗留项告警 1，见第 5 节） |
-| **自动化断言合计** | — | **601** | **0 失败** |
+| **冒烟合计** | — | **323** | **0 失败** |
 | 静态检查 | `pnpm lint`、`pnpm typecheck` | — | 无错误 |
-| 生产构建 | `pnpm build` | 92 条路由（52 静态 / 40 动态：68 个 API + 20 个页面 + robots/sitemap） | 通过（Turbopack 编译成功） |
+| 生产构建 | `pnpm build` | 69 个 API + 20 个页面及框架元路由 | 通过（Turbopack 编译成功） |
 | 生产启动 | `pnpm start` | `/api/health`、`/`、`/surnames` 均 200 | 通过 |
 | 备份 / 恢复演练 | `pnpm db:backup` + 影子库恢复 | 48 张表 / 4369 行 | 恢复行数与快照一致（独立核对） |
 | 性能基线 | `pnpm test:perf` | 11 端点 ×3 + 60 并发 + 5 种导出 | 0 异常端点 |
 
-## 2. 单元测试（Vitest，20 文件 / 225 通过 + 2 跳过）
+## 2. 单元测试（Vitest，24 文件通过 / 2 跳过；243 passed + 21 skipped）
 
 | 文件 | 项数 | 覆盖 |
 | --- | ---: | --- |
@@ -85,15 +85,15 @@
 
 遗留项告警 1 个：CSP `style-src 'unsafe-inline'`（Tailwind 运行时注入样式的现状取舍，已在安全文档论证并记录）。本轮修复记录：依赖安全告警 GHSA-g3hv-75wg-m249（minimatch glob 放大 DoS）通过按漏洞区间收口至 11.0.1 修复，仅涉开发工具链，`pnpm-workspace.yaml` 有完整说明。
 
-## 6. 性能基线（`reports/perf-report.json`，2026-11-10）
+## 6. 性能基线（`reports/perf-report.json`，2026-11-16）
 
 `next build` + `next start` 生产单实例，预热后测量：
 
 ```
-顺序请求 11 端点 ×3：p50 7 ~ 19ms，p95 9 ~ 21ms，全部 200
-并发读取：20 并发 × 3 轮 = 60 次，成功 60 / 失败 0，p50 24ms，p95 52ms，max 54ms
-图谱局部加载：16ms（服务端节点上限 200）
-5 种导出：JSON 18ms、GEDCOM551 14ms、SVG 16ms、PNG 16ms、PDF 15ms
+顺序请求：健康检查读取到本机 memory cache fallback；11 个端点全部成功
+并发读取：20 并发 × 3 轮 = 60 次，成功 60 / 失败 0；p95 低于本地阈值
+图谱局部加载：服务端节点上限 200，成功
+5 种导出：JSON、GEDCOM551、SVG、PNG、PDF 全部成功
 异常端点 0 个
 ```
 
@@ -123,4 +123,4 @@
 | Safari / Firefox / 真机移动端 | Playwright 仅安装 Chromium；移动端为 Chromium 模拟 Pixel 5 |
 | 系统性无障碍（a11y）审计、国际化 | 未纳入本次范围 |
 | 真实历史数据授权与批量史料录入 | 无授权来源；平台坚持「无来源不生成」，当前为少量可核验基础资料 + 明确标注的演示数据 |
-| SOURCE / DOCKER 驱动的真实在线升级 | 已在隔离演练中验证任务编排与安全边界（SIMULATE 驱动 + 225 项单测），真实自升级待首个生产实例执行 |
+| SOURCE / DOCKER 驱动的真实在线升级 | 已在隔离演练中验证任务编排与安全边界；本轮 264 项 Vitest 通过/跳过口径已更新，真实自升级待首个生产实例执行 |

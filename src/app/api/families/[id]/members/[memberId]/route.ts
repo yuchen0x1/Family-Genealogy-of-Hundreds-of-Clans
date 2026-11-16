@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { ok, route, parseBody, assertSameOrigin, ApiError } from "@/lib/api";
 import { memberUpdateSchema } from "@/lib/validation";
 import { getCurrentUser } from "@/lib/auth";
-import { assertFamilyRead, assertFamilyWrite } from "@/lib/permissions";
+import { assertFamilyRead, assertFamilyWrite, normalizePersonVisibility } from "@/lib/permissions";
 import { encryptSensitive, decryptSensitive } from "@/lib/crypto";
 import { publicPersonView, createVersionSnapshot } from "@/lib/genealogy";
 import { audit } from "@/lib/audit";
@@ -65,7 +65,13 @@ export const PATCH = route<Ctx>(async (req: NextRequest, ctx) => {
   if (sensitiveData !== undefined) {
     patch.sensitiveDataEncrypted = sensitiveData ? encryptSensitive(sensitiveData) : null;
   }
-  if (rest.isLiving && rest.visibility === "PUBLIC") patch.visibility = "FAMILY";
+  // 使用“下一状态”判定，而不是只看本次 PATCH 是否同时提交 isLiving。
+  // 否则对现有在世人物只提交 visibility=PUBLIC 会绕过隐私边界。
+  const nextIsLiving = rest.isLiving ?? existing.isLiving;
+  const nextVisibility = normalizePersonVisibility(nextIsLiving, rest.visibility ?? existing.visibility);
+  if (rest.isLiving !== undefined || rest.visibility !== undefined || nextVisibility !== existing.visibility) {
+    patch.visibility = nextVisibility;
+  }
 
   const member = await prisma.familyMember.update({ where: { id: memberId }, data: patch });
   await createVersionSnapshot(id, `编辑人物：${member.surnameText}${member.givenName}`, user!.id);

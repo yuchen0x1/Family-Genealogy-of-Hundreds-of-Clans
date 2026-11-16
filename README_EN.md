@@ -9,7 +9,7 @@
 Trace the origin of a surname, continue the memory of a family — a Chinese surname-culture and genealogy platform built on documented sources and strict privacy boundaries.
 
 [![CI](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/actions/workflows/ci.yml/badge.svg)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.3.0-8a6a35)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases)
+[![Release](https://img.shields.io/badge/release-v0.3.1-8a6a35)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2f5a58)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178c6)](https://www.typescriptlang.org)
@@ -35,7 +35,7 @@ A full-stack, real-implementation (no mock data) open-source platform combining 
 
 ## Latest Release
 
-**v0.3.0 (2026-11-13)** — Review genealogy data with 11 explainable checks, severity filters, search, pagination, and links to affected records. This release strengthens public-family privacy, prevents concurrent submissions of the same import job from writing twice, and corrects GEDCOM names, dates, adoption, and parentage exchange. See the [full release history and upgrade notes (Chinese)](docs/releases/release-notes.md).
+**v0.3.1 (2026-11-16)** — Hardens living-person privacy, production session-secret handling, API ID validation, surname-person search, storage readiness, build trace isolation, fallback rate-limit resets, and browser origin alignment. See the [full audit and upgrade report](PROJECT_AUDIT.md) and [full release history (Chinese)](docs/releases/release-notes.md).
 
 ## Features
 
@@ -82,11 +82,11 @@ Not claimed: third-party penetration testing, WAF/CDN, production TLS certificat
 | Layer | Choice (from `package.json`, verified by build) |
 | --- | --- |
 | Frontend | Next.js 16.4.5 (App Router / Turbopack), React 19.3.1, TypeScript 6.0.3, Tailwind CSS v4, SWR, ECharts |
-| Backend | 68 Route Handlers, Zod, scrypt password hashing, AES-256-GCM field encryption |
+| Backend | 69 Route Handlers, Zod, scrypt password hashing, AES-256-GCM field encryption |
 | Database | PostgreSQL 17, Prisma 6.19 (48 models / 6 migrations), `pg_trgm` + Chinese 2-gram + pinyin search keys |
 | Cache | Redis (auto-degrades to in-process cache when unavailable) |
 | Storage | Local non-public directory (default) / S3-compatible object storage (opt-in) |
-| Testing | Vitest (225 tests), 5 HTTP smoke suites (314 checks), Playwright E2E (11), security audit (42), perf baseline |
+| Testing | Vitest (243 passed / 21 skipped), 5 HTTP smoke suites (323 checks), Playwright E2E (11 passed / 1 skipped), security audit (42), perf baseline |
 | Deployment | Dockerfile, docker-compose (app + nginx + postgres + redis + updater sidecar), Nginx TLS, systemd unit |
 
 ## Quick Start
@@ -132,21 +132,27 @@ docker compose up -d --build
 | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | User manual (Chinese) |
 | [docs/API.md](docs/API.md) | Full API reference & permission model |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Deployment, HTTPS, backup/restore, updater troubleshooting |
-| [docs/TEST_REPORT.md](docs/TEST_REPORT.md) | Latest verified test round (592 automated assertions, 0 failures) |
+| [PROJECT_AUDIT.md](PROJECT_AUDIT.md) | 2026-11-16 source, architecture, risk, and local verification audit |
+| [COMPETITOR_ANALYSIS.md](COMPETITOR_ANALYSIS.md) | Research on 18 open-source projects and capability matrix |
+| [UPGRADE_ROADMAP.md](UPGRADE_ROADMAP.md) | EV-001–EV-051 priorities, files, and acceptance criteria |
+| [UPGRADE_REPORT.md](UPGRADE_REPORT.md) | Delivered fixes, evidence, and explicit boundaries |
+| [docs/TEST_REPORT.md](docs/TEST_REPORT.md) | Latest verified local test round |
 | [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) | Security design & audit results |
 | [docs/COMPLETION.md](docs/COMPLETION.md) | What is done, verified, and explicitly not done |
 | [CHANGELOG.md](CHANGELOG.md) | Release notes |
 
 ## Testing
 
-2026-11-10 release round, executed against a production build (`next build` + `next start`):
+2026-11-16 local final round, executed against a production build (`next build` + `next start`):
 
 | Category | Result |
 | --- | --- |
-| Automated assertions | **592 total, 0 failures** (225 unit + 314 smoke + 42 security + 11 E2E) |
-| Build | 91 routes (10 static + 81 dynamic), 20 pages |
-| Backup/restore drill | 48 tables / 4,369 rows snapshot → restored row count independently verified |
-| Performance baseline | 11 endpoints p95 ≤ 21 ms; 60 concurrent requests, 0 failures |
+| Vitest | **243 passed / 21 skipped** (24 files passed, 2 skipped) |
+| HTTP smoke | **323/323** (28 + 55 + 73 + 93 + 74) |
+| Playwright | **11 passed / 1 skipped** |
+| Security audit | **42/42**, with one `unsafe-inline` CSP warning |
+| Build | **Passed**; 69 API routes, 20 pages, no upload trace warning |
+| Performance baseline | **Passed**; 60 concurrent requests, 0 failures |
 
 CI runs lint + typecheck + unit tests on every push/PR, plus a production build & smoke tests against a PostgreSQL 17 service container; `v*` tags automatically create a GitHub Release from the changelog.
 

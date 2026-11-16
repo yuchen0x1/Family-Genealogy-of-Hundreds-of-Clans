@@ -82,6 +82,14 @@ export function canViewPersonDetails(access: FamilyAccess, person: { isLiving: b
   return person.isLiving ? false : person.visibility === Visibility.FAMILY;
 }
 
+/**
+ * 在世人物的公开级别必须显式降级为 FAMILY，避免 PATCH 只提交
+ * `visibility: PUBLIC` 时绕过创建接口的隐私保护。
+ */
+export function normalizePersonVisibility(isLiving: boolean, visibility: Visibility): Visibility {
+  return isLiving && visibility === Visibility.PUBLIC ? Visibility.FAMILY : visibility;
+}
+
 /** 公开列表/搜索用：私有族谱一律排除；演示族谱明确标注。 */
 export const PUBLIC_FAMILY_WHERE = { visibility: Visibility.PUBLIC, deletedAt: null } as const;
 

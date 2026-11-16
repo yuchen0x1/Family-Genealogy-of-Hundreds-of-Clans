@@ -63,12 +63,19 @@ export type RouteContext<P = Record<string, string>> = { params: Promise<P> };
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const WRITE_FALLBACK_LIMIT = 600;
 const WRITE_FALLBACK_WINDOW_SECONDS = 60;
+const UUID_PARAM_NAMES = new Set(["id", "memberId", "relationId", "docId", "versionId", "jobId", "userId"]);
 
 export function route<P = Record<string, string>>(
   handler: (req: NextRequest, ctx: RouteContext<P>) => Promise<NextResponse>,
 ) {
   return async (req: NextRequest, ctx: RouteContext<P>): Promise<NextResponse> => {
     try {
+      const params = (await ctx?.params) ?? ({} as P);
+      for (const [name, value] of Object.entries(params as Record<string, string>)) {
+        if (UUID_PARAM_NAMES.has(name) && value && !z.string().uuid().safeParse(value).success) {
+          throw new ApiError(400, "路径参数必须是合法 UUID", "INVALID_ID", { parameter: name });
+        }
+      }
       if (WRITE_METHODS.has(req.method)) {
         await assertRateLimit(
           `write:${clientIpHash(req)}`,
@@ -76,7 +83,7 @@ export function route<P = Record<string, string>>(
           WRITE_FALLBACK_WINDOW_SECONDS,
         );
       }
-      return await handler(req, ctx);
+      return await handler(req, { params: Promise.resolve(params) });
     } catch (error) {
       return handleError(error);
     }

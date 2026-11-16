@@ -10,14 +10,18 @@
  * S3 兼容对象存储：需要真实凭据与外网环境，属于外部依赖，未在本环境验证；
  * 配置 STORAGE_DRIVER=s3 时会返回明确的依赖错误，不会伪造成功。
  */
-import { mkdir, readFile, writeFile, unlink, stat } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile, unlink, stat } from "node:fs/promises";
+import { constants as fsConstants } from "node:fs";
 import path from "node:path";
 import { randomBytes, createHash } from "node:crypto";
 
 export type StoredObject = { bytes: Buffer; size: number };
 
 const DRIVER = (process.env.STORAGE_DRIVER || "local").toLowerCase();
-const LOCAL_ROOT = path.resolve(process.cwd(), process.env.UPLOAD_DIR || "./.storage/uploads");
+const configuredRoot = process.env.UPLOAD_DIR?.trim();
+const LOCAL_ROOT = configuredRoot
+  ? path.resolve(/* turbopackIgnore: true */ configuredRoot)
+  : path.join(process.cwd(), ".storage", "uploads");
 
 /** storageKey 仅允许 ASCII 安全字符与 / 分层；拒绝 ..、绝对路径、反斜杠与空段。 */
 export function assertSafeKey(key: string): string {
@@ -83,4 +87,16 @@ export async function deleteObject(key: string): Promise<void> {
 
 export function storageInfo() {
   return { driver: DRIVER, localRoot: DRIVER === "local" ? LOCAL_ROOT : null, s3Configured: false };
+}
+
+/** 供健康检查使用：确认上传目录可创建且可写，不读取或返回用户文件。 */
+export async function storageHealth(): Promise<"local" | "unavailable" | "unsupported"> {
+  if (DRIVER !== "local") return "unsupported";
+  try {
+    await mkdir(LOCAL_ROOT, { recursive: true });
+    await access(LOCAL_ROOT, fsConstants.R_OK | fsConstants.W_OK);
+    return "local";
+  } catch {
+    return "unavailable";
+  }
 }
