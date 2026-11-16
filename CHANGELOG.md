@@ -6,21 +6,24 @@
 
 ## [Unreleased]
 
+记录尚未发布的功能、修复与维护性更新。
+
+## [0.3.1] - 2026-11-16
+
+### 变更
 2026-11-16 项目演进审计与可靠性硬化（尚未创建 Release/tag）。
-
-### 修复与改进
-
 - 防止人物 PATCH 绕过在世人物隐私默认值；全站人物检索补齐姓氏匹配。
 - 在统一 API 入口拒绝非法 UUID；生产缺少 `SESSION_SECRET` 时快速失败；过期会话自动标记撤销。
 - 健康检查增加文件存储状态；固定上传目录并排除构建追踪；生产 CSP 移除 `unsafe-eval` 并加入 `object-src 'none'`。
 - Redis 不可用时支持跨进程清理开发限流计数；性能报告改为记录真实缓存模式。
 - Playwright 默认基址跟随 `NEXT_PUBLIC_SITE_URL`，修复 localhost/127.0.0.1 origin 不一致导致的 E2E 登录失败。
 - 新增 `PROJECT_AUDIT.md`、`COMPETITOR_ANALYSIS.md`、`UPGRADE_ROADMAP.md`、`UPGRADE_REPORT.md`，记录 18 个开源项目研究和 EV-001～EV-051 路线图。
-
-### 验证
-
 - Vitest：243 passed / 21 skipped；HTTP 冒烟 323/323；Playwright 11 passed / 1 skipped；安全审计 42/42；lint、typecheck、build 通过。
 - 本节不表示已完成 S3、外部 OCR、Redis HA、离线同步、生产签名更新或第三方渗透测试；这些边界见 `UPGRADE_REPORT.md`。
+- feat: harden genealogy platform and document evolution
+- chore: remove unused intermediate map assets
+- chore: remove obsolete reports and exclude local artifacts
+- docs: complete release notes for all versions
 
 ## [0.3.0] - 2026-11-13
 
