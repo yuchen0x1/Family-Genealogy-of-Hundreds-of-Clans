@@ -7,13 +7,14 @@ import useSWR from "swr";
 import { Search, Menu, X, ChevronDown, LogOut, User as UserIcon, Shield, BookOpen, Network, Map, Users } from "lucide-react";
 import { fetcher, apiRequest, type MeResponse } from "@/lib/client";
 import { cn } from "@/lib/utils";
+import { readLocaleSetting, resolveLocale, t, writeLocaleSetting, type Locale, type LocaleSetting } from "@/lib/i18n";
 
 const NAV = [
-  { href: "/", label: "首页", icon: null },
-  { href: "/surnames", label: "百家姓", icon: BookOpen },
-  { href: "/roots", label: "历史寻根", icon: Map },
-  { href: "/families", label: "族谱中心", icon: Network },
-  { href: "/community", label: "宗亲社区", icon: Users },
+  { href: "/", key: "home" as const, icon: null },
+  { href: "/surnames", key: "surnames" as const, icon: BookOpen },
+  { href: "/roots", key: "roots" as const, icon: Map },
+  { href: "/families", key: "families" as const, icon: Network },
+  { href: "/community", key: "community" as const, icon: Users },
 ];
 
 export function SiteHeader() {
@@ -25,9 +26,19 @@ export function SiteHeader() {
   const [q, setQ] = useState("");
   const [suggestions, setSuggestions] = useState<Array<{ label: string; href: string; kind: string }>>([]);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [localeSetting, setLocaleSetting] = useState<LocaleSetting>(() => readLocaleSetting());
+  const [locale, setLocale] = useState<Locale>(() => resolveLocale(readLocaleSetting(), typeof navigator === "undefined" ? [] : navigator.languages || [navigator.language]));
   const boxRef = useRef<HTMLDivElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const userMenuButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const next = resolveLocale(localeSetting, typeof navigator === "undefined" ? [] : navigator.languages || [navigator.language]);
+    // The browser preference is an external value; sync it once after hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLocale(next);
+    document.documentElement.lang = next;
+  }, [localeSetting]);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -100,7 +111,7 @@ export function SiteHeader() {
           </div>
         </Link>
 
-        <nav aria-label="主导航" className="ml-2 hidden items-center gap-1 lg:flex">
+        <nav aria-label={t(locale, "mainNav")} className="ml-2 hidden items-center gap-1 lg:flex">
           {NAV.map((item) => {
             const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             return (
@@ -113,7 +124,7 @@ export function SiteHeader() {
                 )}
                 aria-current={active ? "page" : undefined}
               >
-                {item.label}
+                {t(locale, item.key)}
               </Link>
             );
           })}
@@ -133,9 +144,9 @@ export function SiteHeader() {
               onFocus={() => setSearchOpen(true)}
               aria-autocomplete="list"
               aria-controls={searchOpen && suggestions.length > 0 ? "site-search-suggestions" : undefined}
-              placeholder="搜索姓氏、人物、祖籍、族谱…"
+              placeholder={t(locale, "search")}
               className="h-9 w-full rounded-full border border-line bg-white/80 pl-9 pr-3 text-[13px] placeholder:text-graphite/60 focus:border-gold focus:outline-none"
-              aria-label="全站搜索"
+              aria-label={t(locale, "searchAria")}
             />
             {searchOpen && suggestions.length > 0 && (
               <ul id="site-search-suggestions" aria-label="搜索建议" className="absolute left-0 right-0 top-11 overflow-hidden rounded-lg border border-line bg-white shadow-lift">
@@ -173,28 +184,34 @@ export function SiteHeader() {
                 <ChevronDown className="h-3.5 w-3.5 text-graphite" />
               </button>
               {userOpen && (
-                <nav id="site-user-menu" aria-label="用户菜单" className="absolute right-0 top-11 w-52 overflow-hidden rounded-lg border border-line bg-white py-1 shadow-lift">
-                  <MenuLink href="/me" icon={<UserIcon className="h-4 w-4" />} label="个人中心" onClick={() => setUserOpen(false)} />
-                  <MenuLink href="/families?mine=1" icon={<Network className="h-4 w-4" />} label="我的族谱" onClick={() => setUserOpen(false)} />
-                  {me.user?.isAdmin && <MenuLink href="/admin" icon={<Shield className="h-4 w-4" />} label="管理后台" onClick={() => setUserOpen(false)} />}
+                <nav id="site-user-menu" aria-label={t(locale, "userMenu")} className="absolute right-0 top-11 w-52 overflow-hidden rounded-lg border border-line bg-white py-1 shadow-lift">
+                  <MenuLink href="/me" icon={<UserIcon className="h-4 w-4" />} label={t(locale, "profile")} onClick={() => setUserOpen(false)} />
+                  <MenuLink href="/families?mine=1" icon={<Network className="h-4 w-4" />} label={t(locale, "myFamilies")} onClick={() => setUserOpen(false)} />
+                  {me.user?.isAdmin && <MenuLink href="/admin" icon={<Shield className="h-4 w-4" />} label={t(locale, "admin")} onClick={() => setUserOpen(false)} />}
                   <div className="my-1 border-t border-line" />
                   <button onClick={logout} className="flex w-full items-center gap-2 px-4 py-2 text-left text-[13px] text-cinnabar hover:bg-cream">
-                    <LogOut className="h-4 w-4" /> 退出登录
+                    <LogOut className="h-4 w-4" /> {t(locale, "logout")}
                   </button>
                 </nav>
               )}
             </div>
           ) : (
             <>
-              <Link href="/login" className="hidden rounded-md px-3 py-1.5 text-[13px] text-ink-soft hover:text-ink sm:block">登录</Link>
-              <Link href="/register" className="rounded-md bg-navy px-3.5 py-2 text-[13px] font-medium text-white hover:bg-navy-light">注册</Link>
+              <Link href="/login" className="hidden rounded-md px-3 py-1.5 text-[13px] text-ink-soft hover:text-ink sm:block">{t(locale, "login")}</Link>
+              <Link href="/register" className="rounded-md bg-navy px-3.5 py-2 text-[13px] font-medium text-white hover:bg-navy-light">{t(locale, "register")}</Link>
             </>
           )}
+          <label className="sr-only" htmlFor="site-locale">{t(locale, "language")}</label>
+          <select id="site-locale" aria-label={t(locale, "language")} value={localeSetting} onChange={(event) => setLocaleSetting(writeLocaleSetting(event.target.value))} className="h-8 rounded-md border border-line bg-white px-1.5 text-[11px] text-ink-soft">
+            <option value="auto">{t(locale, "auto")}</option>
+            <option value="zh-CN">{t(locale, "simplified")}</option>
+            <option value="en-US">{t(locale, "english")}</option>
+          </select>
           <button
             ref={mobileMenuButtonRef}
             className="rounded-md p-2 text-ink-soft hover:bg-cream-dark lg:hidden"
             onClick={() => setMobileOpen((v) => !v)}
-            aria-label={mobileOpen ? "关闭菜单" : "展开菜单"}
+            aria-label={mobileOpen ? t(locale, "closeMenu") : t(locale, "openMenu")}
             aria-expanded={mobileOpen}
             aria-controls="mobile-primary-navigation"
           >
@@ -209,7 +226,7 @@ export function SiteHeader() {
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="搜索姓氏、人物、祖籍…"
+              placeholder={t(locale, "searchMobile")}
               className="h-9 w-full rounded-full border border-line bg-white pl-9 pr-3 text-[13px] focus:border-gold focus:outline-none"
             />
           </form>
@@ -218,7 +235,7 @@ export function SiteHeader() {
               const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
               return (
                 <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)} aria-current={active ? "page" : undefined} className="rounded-md px-3 py-2 text-sm text-ink-soft hover:bg-white">
-                  {item.label}
+                {t(locale, item.key)}
                 </Link>
               );
             })}
