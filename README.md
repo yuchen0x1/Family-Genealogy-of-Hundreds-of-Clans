@@ -43,7 +43,7 @@ English README: [README_EN.md](README_EN.md)
 
 ## 最新更新
 
-**v0.3.1（2026-11-16）**：加强在世人物隐私、生产密钥与 API 参数边界，补齐姓氏人物检索，增加存储健康检查和构建产物隔离，修复 Redis fallback 连续测试限流清理，并让浏览器 E2E 与配置的站点 origin 一致。完整审计、竞品研究与升级边界见 [PROJECT_AUDIT.md](PROJECT_AUDIT.md) 和[完整发布记录](docs/releases/release-notes.md)。
+**v0.3.2（2026-11-17）**：加强在世人物隐私、生产密钥与 API 参数边界，补齐姓氏人物检索，增加存储健康检查和构建产物隔离，修复 Redis fallback 连续测试限流清理，并让浏览器 E2E 与配置的站点 origin 一致。完整审计、竞品研究与升级边界见 [PROJECT_AUDIT.md](PROJECT_AUDIT.md) 和[完整发布记录](docs/releases/release-notes.md)。
 
 ---
 
