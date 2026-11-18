@@ -57,7 +57,10 @@ jobs:
             found && /^## / { exit }
             found { print }
           ' CHANGELOG.md)"
-          body+=$'\n\n<!-- xungen-update-mandatory: '"${UPDATE_MANDATORY:-false}"$' -->\n<!-- xungen-security-fix: '"${UPDATE_SECURITY_FIX:-false}"$' -->\n<!-- xungen-min-supported-version: '"${UPDATE_MIN_SUPPORTED_VERSION:-}"$' -->'
+          body+=$'\n\n<!-- xungen-update-mandatory: '"${UPDATE_MANDATORY:-false}"$' -->\n<!-- xungen-security-fix: '"${UPDATE_SECURITY_FIX:-false}"$' -->'
+          if [[ -n "${UPDATE_MIN_SUPPORTED_VERSION:-}" ]]; then
+            body+=$'\n<!-- xungen-min-supported-version: '"${UPDATE_MIN_SUPPORTED_VERSION}"$' -->'
+          fi
           gh release create "$tag" --title "$tag" --notes "$body"
 
       # 项目是自托管服务端应用，没有 .apk/.exe；这里产出具名发布包，
