@@ -9,7 +9,7 @@
 寻一姓之源，续一脉之谱 —— 以史料为据、以隐私为界的中华姓氏文化与家族族谱平台
 
 [![CI](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/actions/workflows/ci.yml/badge.svg)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.3.1-8a6a35)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases)
+[![Release](https://img.shields.io/github/v/release/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans?display_name=tag&sort=date)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2f5a58)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178c6)](https://www.typescriptlang.org)
@@ -43,7 +43,17 @@ English README: [README_EN.md](README_EN.md)
 
 ## 最新更新
 
-**v0.3.2（2026-11-17）**：加强在世人物隐私、生产密钥与 API 参数边界，补齐姓氏人物检索，增加存储健康检查和构建产物隔离，修复 Redis fallback 连续测试限流清理，并让浏览器 E2E 与配置的站点 origin 一致。完整审计、竞品研究与升级边界见 [PROJECT_AUDIT.md](PROJECT_AUDIT.md) 和[完整发布记录](docs/releases/release-notes.md)。
+<!-- github-release:start -->
+
+**[v0.3.2](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.3.2)** · 2026-11-17
+
+v0.3.2 是站点壳层的多语言维护版本。本次为 Next.js 站点头部加入自动语言检测、中文/English 手动切换与本地持久化；族谱、姓氏等业务数据保持原文。
+
+[全部发行记录](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases)
+
+<!-- github-release:end -->
+
+[完整更新日志](docs/releases/release-notes.md)
 
 ---
 
@@ -256,7 +266,7 @@ flowchart LR
 | **B. 下载压缩包** | 打开 [Releases](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/latest) → `Assets` 下的 **Source code (zip)** | 不想用 git 的场景 |
 | **C. Docker 一键起** | 解压/克隆后 `docker compose up -d --build` | 有 Docker 的服务器 |
 
-想确认拿到的是最新版：`package.json` 的 `version` 应等于 [最新 Release](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/latest) 的 tag 去掉 `v`（当前源码版本 `0.3.1`）。
+想确认拿到的是最新版：`package.json` 的 `version` 应等于 [最新 Release](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/latest) 的 tag 去掉 `v`。
 
 **环境要求**：Node.js ≥ 22、pnpm 11（Corepack）。Windows / macOS / Linux 均可；Windows 优先用 PowerShell。
 
