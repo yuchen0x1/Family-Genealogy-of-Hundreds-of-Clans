@@ -68,6 +68,7 @@ curl -k -I https://localhost/                 # 200 + 安全响应头
 cp .env.example .env   # 修改 DATABASE_URL / REDIS_URL / SESSION_SECRET / ENCRYPTION_KEY / NEXT_PUBLIC_SITE_URL
 pnpm install --frozen-lockfile
 pnpm exec prisma generate
+pnpm exec prisma generate
 pnpm exec prisma migrate deploy
 pnpm db:seed
 pnpm build

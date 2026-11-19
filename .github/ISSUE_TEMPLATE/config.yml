@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 私密报告安全漏洞
+    url: https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/security/advisories/new
+    about: 请通过私密渠道提交安全漏洞。

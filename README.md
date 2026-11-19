@@ -43,15 +43,9 @@ English README: [README_EN.md](README_EN.md)
 
 ## 最新更新
 
-<!-- github-release:start -->
+**v0.4.0** · 将中华寻根安装到桌面或主屏幕。断网时可查看重连提示，站点部署更新后可先保存编辑，再确认刷新。自托管包附带校验、构建来源证明和依赖清单。
 
-**[v0.3.2](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.3.2)** · 2026-11-17
-
-v0.3.2 是站点壳层的多语言维护版本。本次为 Next.js 站点头部加入自动语言检测、中文/English 手动切换与本地持久化；族谱、姓氏等业务数据保持原文。
-
-[全部发行记录](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases)
-
-<!-- github-release:end -->
+[下载最新正式版](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/latest) · [全部发行记录](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases)
 
 [完整更新日志](docs/releases/release-notes.md)
 
@@ -257,6 +251,14 @@ flowchart LR
 
 ## 🚀 快速开始
 
+| 使用方式 | 功能与安装 |
+| --- | --- |
+| 桌面、手机或平板浏览器 | 打开部署站点，在线使用完整功能。 |
+| PWA | 在生产站点的页脚或浏览器菜单选择安装。iPhone/iPad 可在 Safari 分享菜单选择「添加到主屏幕」。 |
+| Linux x64 自托管 | 下载 Release 源码包，按下文使用 Docker Compose 或源码部署。 |
+
+系统细分、NAS 与浏览器验收范围见 [平台兼容性](docs/PLATFORMS.md)。升级见 [在线更新](docs/AUTO_UPDATE.md)，发版与维护见 [维护手册](docs/MAINTENANCE.md)。
+
 > **这是一个自托管的服务端应用，不是手机 App，没有 `.apk` / `.exe` 安装包。**
 > 「下载最新版本」= 获取源码（或镜像）后在你自己的服务器/本机跑起来。三种方式任选其一：
 
@@ -279,6 +281,7 @@ Copy-Item .env.example .env      # 生产必须替换 SESSION_SECRET 与 ENCRYPT
 
 # 2. 启动数据库（项目内置 PostgreSQL 17 二进制，数据目录 ~/.xungen-pg）
 pnpm install
+pnpm exec prisma generate
 pnpm db:pg
 
 # 3. 迁移 + 初始化数据（新开一个终端）
@@ -292,7 +295,7 @@ pnpm dev                         # http://localhost:3000
 ```bash
 # macOS / Linux / Git Bash：把 Copy-Item 换成 cp，其余一致
 cp .env.example .env
-pnpm install && pnpm db:pg
+pnpm install && pnpm exec prisma generate && pnpm db:pg
 pnpm db:migrate && pnpm db:seed
 pnpm dev
 ```

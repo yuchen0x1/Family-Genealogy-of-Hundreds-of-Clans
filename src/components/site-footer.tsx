@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PwaControls } from "@/components/pwa-controls";
 
 const GROUPS = [
   {
@@ -74,6 +75,7 @@ export function SiteFooter() {
         <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5 text-[11px] text-graphite">
           <span>© {new Date().getFullYear()} 中华寻根 · 百家族谱　项目演示版本</span>
           <span>历史资料持续录入与审核中 · 私人族谱默认不公开 · 在世人物信息默认保护</span>
+          <PwaControls />
         </div>
       </div>
     </footer>

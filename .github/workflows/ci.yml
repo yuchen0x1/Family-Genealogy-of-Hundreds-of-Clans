@@ -5,6 +5,7 @@ on:
     branches: [main]
     tags: ["v*"]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,140 +14,182 @@ jobs:
   quality:
     name: Lint / Typecheck / Unit Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-      # 不指定 version：由 package.json 的 packageManager 字段（pnpm@11.20.0）决定，
-      # 同时指定两者会被 pnpm/action-setup 判定为版本冲突直接失败。
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --registry=https://registry.npmjs.org
+      - run: pnpm exec prisma generate
+      - run: git diff --check
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm test:backup
+      - run: pnpm audit --registry=https://registry.npmjs.org --prod --audit-level high
 
-  release:
-    name: Create GitHub Release
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [quality, smoke]
+  dependency-review:
+    name: Dependency Review
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4
         with:
-          fetch-depth: 0
-      - name: Create release from changelog
-        env:
-          GH_TOKEN: ${{ github.token }}
-          UPDATE_MANDATORY: ${{ vars.UPDATE_MANDATORY || 'false' }}
-          UPDATE_SECURITY_FIX: ${{ vars.UPDATE_SECURITY_FIX || 'false' }}
-          UPDATE_MIN_SUPPORTED_VERSION: ${{ vars.UPDATE_MIN_SUPPORTED_VERSION || '' }}
-        run: |
-          set -euo pipefail
-          tag="${GITHUB_REF_NAME}"
-          version="${tag#v}"
-          if ! grep -qE "^## \\[${version//./\\.}\\]" CHANGELOG.md; then
-            echo "CHANGELOG.md 中缺少 ${version} 条目" >&2
-            exit 1
-          fi
-          body="$(awk -v version="$version" '
-            $0 ~ "^## \\[" version "\\]" { found=1; next }
-            found && /^## / { exit }
-            found { print }
-          ' CHANGELOG.md)"
-          body+=$'\n\n<!-- xungen-update-mandatory: '"${UPDATE_MANDATORY:-false}"$' -->\n<!-- xungen-security-fix: '"${UPDATE_SECURITY_FIX:-false}"$' -->'
-          if [[ -n "${UPDATE_MIN_SUPPORTED_VERSION:-}" ]]; then
-            body+=$'\n<!-- xungen-min-supported-version: '"${UPDATE_MIN_SUPPORTED_VERSION}"$' -->'
-          fi
-          gh release create "$tag" --title "$tag" --notes "$body"
-
-      # 项目是自托管服务端应用，没有 .apk/.exe；这里产出具名发布包，
-      # 让 Release 页面有一个明确的下载项，而不是只有 GitHub 的 "Source code"。
-      - name: Package release bundle
-        env:
-          GH_TOKEN: ${{ github.token }}
-          UPDATE_SIGNING_PRIVATE_KEY: ${{ secrets.UPDATE_SIGNING_PRIVATE_KEY }}
-          UPDATE_MANDATORY: ${{ vars.UPDATE_MANDATORY || 'false' }}
-          UPDATE_SECURITY_FIX: ${{ vars.UPDATE_SECURITY_FIX || 'false' }}
-          UPDATE_MIN_SUPPORTED_VERSION: ${{ vars.UPDATE_MIN_SUPPORTED_VERSION || '' }}
-        run: |
-          set -euo pipefail
-          tag="${GITHUB_REF_NAME}"
-          version="${tag#v}"
-          name="xungen-${version}"
-          git archive --format=tar.gz --prefix="${name}/" -o "${name}.tar.gz" "$tag"
-          sha256sum "${name}.tar.gz" > "${name}.tar.gz.sha256"
-          digest="$(sha256sum "${name}.tar.gz" | awk '{print $1}')"
-          size="$(stat -c '%s' "${name}.tar.gz")"
-          cat > "${name}.update.json" <<EOF
-          {"version":"${version}","tag":"${tag}","channel":"stable","releaseDate":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","mandatory":${UPDATE_MANDATORY:-false},"securityFix":${UPDATE_SECURITY_FIX:-false},"minSupportedVersion":"${UPDATE_MIN_SUPPORTED_VERSION:-}","commit":"${GITHUB_SHA}","assets":[{"name":"${name}.tar.gz","size":${size},"sha256":"${digest}"}]}
-          EOF
-          assets=("${name}.tar.gz" "${name}.tar.gz.sha256" "${name}.update.json")
-          if [[ -n "${UPDATE_SIGNING_PRIVATE_KEY:-}" ]]; then
-            umask 077
-            printf '%s' "$UPDATE_SIGNING_PRIVATE_KEY" > signing.key
-            openssl dgst -sha256 -sign signing.key -out "${name}.tar.gz.sig.bin" "${name}.tar.gz"
-            base64 -w 0 "${name}.tar.gz.sig.bin" > "${name}.tar.gz.sig"
-            assets+=("${name}.tar.gz.sig")
-            rm -f signing.key "${name}.tar.gz.sig.bin"
-          fi
-          gh release upload "$tag" "${assets[@]}" --clobber
-          echo "已附加 ${name}.tar.gz、SHA-256 清单与更新元数据（$(du -h "${name}.tar.gz" | cut -f1)）"
+          fail-on-severity: high
 
   smoke:
     name: Build + HTTP Smoke
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:17
         env:
-          POSTGRES_USER: xungen
-          POSTGRES_PASSWORD: xungen_pwd
-          POSTGRES_DB: xungen
+          POSTGRES_USER: evolution
+          POSTGRES_DB: evolution
+          POSTGRES_HOST_AUTH_METHOD: trust
         ports:
-          - 5432:5432
+          - 55439:5432
         options: >-
-          --health-cmd "pg_isready -U xungen"
+          --health-cmd "pg_isready -U evolution"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
     env:
-      DATABASE_URL: postgresql://xungen:xungen_pwd@127.0.0.1:5432/xungen?schema=public
+      DATABASE_URL: postgresql://evolution@127.0.0.1:55439/evolution?schema=public
+      EVOLUTION_ISOLATED_TEST: "1"
       SESSION_SECRET: ci-only-session-secret-not-for-production
       ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
-      # 无 Redis：自动降级为进程内缓存（被测行为之一）
       REDIS_URL: ""
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      E2E_BASE_URL: http://localhost:3000
+      PWA_E2E: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --registry=https://registry.npmjs.org
+      - run: pnpm exec prisma generate
       - run: pnpm db:migrate
       - run: pnpm db:seed
-      - name: Build with release metadata
-        env:
-          APP_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '0.0.0-dev' }}
-          APP_BUILD_SHA: ${{ github.sha }}
-          APP_BUILD_TIME: ${{ github.event.head_commit.timestamp || '' }}
-        run: pnpm build
+      - run: pnpm exec vitest run src/tests/genealogy-integration.test.ts
+      - run: pnpm build
       - name: Start production server
         run: |
           pnpm start > /tmp/next-server.log 2>&1 &
           for i in $(seq 1 60); do
-            if curl -fsS http://localhost:3000/api/health > /dev/null; then
-              echo "server ready"; exit 0
-            fi
+            if curl -fsS http://localhost:3000/api/health > /dev/null; then exit 0; fi
             sleep 2
           done
-          echo "server failed to start"; cat /tmp/next-server.log; exit 1
+          cat /tmp/next-server.log
+          exit 1
       - run: pnpm test:smoke
+      - run: pnpm test:reset-limits
       - run: pnpm test:smoke:ui
+      - run: pnpm test:reset-limits
+      - run: pnpm test:smoke:archive
+      - run: pnpm test:reset-limits
+      - run: pnpm test:smoke:community
+      - run: pnpm test:reset-limits
+      - run: pnpm test:smoke:admin
+      - run: pnpm test:reset-limits
+      - run: pnpm test:security
+      - run: pnpm test:reset-limits
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      - name: Upload browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: browser-diagnostics
+          path: test-results/
+          retention-days: 7
       - name: Show server log on failure
         if: failure()
         run: cat /tmp/next-server.log
+
+  docker:
+    name: Linux x64 Docker Build + Boot
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Build the self-hosted image
+        run: docker build --build-arg APP_BUILD_SHA="$GITHUB_SHA" -t xungen:ci .
+      - name: Migrate and start the image against a clean database
+        run: |
+          docker network create xungen-ci
+          docker run -d --name xungen-pg --network xungen-ci --env POSTGRES_USER=xungen \
+            --env POSTGRES_DB=xungen --env POSTGRES_PASSWORD=ci-fixture-only postgres:17
+          timeout 60 bash -c 'until docker exec xungen-pg pg_isready -h 127.0.0.1 -U xungen; do sleep 2; done'
+          docker run -d --name xungen-app --network xungen-ci -p 127.0.0.1:3100:3000 \
+            --env DATABASE_URL=postgresql://xungen:ci-fixture-only@xungen-pg:5432/xungen \
+            --env SESSION_SECRET=ci-only-session-secret-not-for-production \
+            --env ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000 \
+            xungen:ci
+          timeout 120 bash -c 'until curl -fsS http://127.0.0.1:3100/api/health; do sleep 2; done'
+      - name: Show container logs on failure
+        if: failure()
+        run: docker logs xungen-app
+
+  release:
+    name: Publish Verified Release
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    needs: [quality, smoke, docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Validate tag and package source bundle
+        env:
+          UPDATE_SIGNING_PRIVATE_KEY: ${{ secrets.UPDATE_SIGNING_PRIVATE_KEY }}
+          UPDATE_MANDATORY: ${{ vars.UPDATE_MANDATORY }}
+          UPDATE_SECURITY_FIX: ${{ vars.UPDATE_SECURITY_FIX }}
+          UPDATE_MIN_SUPPORTED_VERSION: ${{ vars.UPDATE_MIN_SUPPORTED_VERSION }}
+        run: |
+          git merge-base --is-ancestor HEAD origin/main
+          node scripts/release-assets.mjs prepare "$GITHUB_REF_NAME" "$RUNNER_TEMP/xungen-release"
+      - name: Generate dependency inventory
+        run: |
+          pnpm install --frozen-lockfile --registry=https://registry.npmjs.org
+          version="${GITHUB_REF_NAME#v}"
+          pnpm sbom --sbom-format cyclonedx --prod --sbom-type application \
+            --out "$RUNNER_TEMP/xungen-release/assets/xungen-${version}.cdx.json"
+      - name: Sign build provenance for the bundle and metadata
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-path: ${{ runner.temp }}/xungen-release/assets/*
+      - name: Verify draft assets before publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/publish-release.sh "$GITHUB_REF_NAME" "$RUNNER_TEMP/xungen-release"

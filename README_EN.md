@@ -9,7 +9,7 @@
 Trace the origin of a surname, continue the memory of a family — a Chinese surname-culture and genealogy platform built on documented sources and strict privacy boundaries.
 
 [![CI](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/actions/workflows/ci.yml/badge.svg)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.3.1-8a6a35)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases)
+[![Release](https://img.shields.io/github/v/release/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans)](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2f5a58)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178c6)](https://www.typescriptlang.org)
@@ -35,7 +35,7 @@ A full-stack, real-implementation (no mock data) open-source platform combining 
 
 ## Latest Release
 
-**v0.3.1 (2026-11-16)** — Hardens living-person privacy, production session-secret handling, API ID validation, surname-person search, storage readiness, build trace isolation, fallback rate-limit resets, and browser origin alignment. See the [full audit and upgrade report](PROJECT_AUDIT.md) and [full release history (Chinese)](docs/releases/release-notes.md).
+**v0.4.0** adds desktop and home-screen installation, an offline reconnection page, and a prompt to refresh after saving changes. The self-hosted bundle includes checksums, build provenance, and a software bill of materials. [Downloads](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/latest) · [Release history](docs/releases/release-notes.md) · [Platform support](docs/PLATFORMS.md)
 
 ## Features
 
@@ -101,6 +101,7 @@ corepack enable
 Copy-Item .env.example .env    # replace SESSION_SECRET & ENCRYPTION_KEY for production
 
 pnpm install
+pnpm exec prisma generate
 pnpm db:pg                     # bundled PostgreSQL 17 binary, data in ~/.xungen-pg
 
 # in a second terminal
@@ -112,7 +113,7 @@ pnpm dev                       # http://localhost:3000
 ```bash
 # macOS / Linux
 cp .env.example .env
-pnpm install && pnpm db:pg
+pnpm install && pnpm exec prisma generate && pnpm db:pg
 pnpm db:migrate && pnpm db:seed
 pnpm dev
 ```

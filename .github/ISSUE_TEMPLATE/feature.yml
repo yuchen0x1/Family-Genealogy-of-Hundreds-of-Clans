@@ -1,0 +1,10 @@
+name: 功能建议
+description: 描述希望平台支持的工作流
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: 想解决的问题和预期操作
+      description: 请说明主要使用的设备、现有做法以及数据或权限要求。
+    validations:
+      required: true

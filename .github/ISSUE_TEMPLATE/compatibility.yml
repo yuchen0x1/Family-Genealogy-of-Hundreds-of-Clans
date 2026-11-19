@@ -1,0 +1,15 @@
+name: 平台兼容性
+description: 报告特定设备、浏览器、NAS 或服务器的差异
+body:
+  - type: input
+    id: environment
+    attributes:
+      label: 项目版本、系统和架构、浏览器或 Docker 版本
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: 受影响的功能和复现步骤
+    validations:
+      required: true

@@ -1,0 +1,18 @@
+name: 功能故障
+description: 报告可以复现的错误
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: 版本、部署方式和浏览器
+      placeholder: v0.4.0 / Docker / Edge
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤、实际结果和期望结果
+      description: 请用合成族谱或脱敏日志，移除私有档案、令牌和连接串。
+    validations:
+      required: true

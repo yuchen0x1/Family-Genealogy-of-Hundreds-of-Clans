@@ -1,0 +1,16 @@
+name: 更新失败
+description: 报告下载、校验、安装、迁移或回滚故障
+body:
+  - type: input
+    id: version
+    attributes:
+      label: 当前版本、目标版本及 SOURCE 或 DOCKER 驱动
+    validations:
+      required: true
+  - type: textarea
+    id: failure
+    attributes:
+      label: 失败阶段、脱敏日志和当前健康状态
+      description: 请说明是否已备份和尝试恢复，移除所有密钥、连接串和用户数据。
+    validations:
+      required: true

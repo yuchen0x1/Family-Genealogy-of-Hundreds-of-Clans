@@ -19,6 +19,7 @@
 ```bash
 # Node.js >= 22，pnpm 11
 pnpm install
+pnpm exec prisma generate
 cp .env.example .env          # PowerShell: Copy-Item .env.example .env
 pnpm db:pg                    # 启动项目内置 PostgreSQL 17
 pnpm db:migrate
