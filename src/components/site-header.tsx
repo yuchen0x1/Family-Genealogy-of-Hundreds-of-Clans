@@ -26,19 +26,23 @@ export function SiteHeader() {
   const [q, setQ] = useState("");
   const [suggestions, setSuggestions] = useState<Array<{ label: string; href: string; kind: string }>>([]);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [localeSetting, setLocaleSetting] = useState<LocaleSetting>(() => readLocaleSetting());
-  const [locale, setLocale] = useState<Locale>(() => resolveLocale(readLocaleSetting(), typeof navigator === "undefined" ? [] : navigator.languages || [navigator.language]));
+  const [localeSetting, setLocaleSetting] = useState<LocaleSetting | null>(null);
+  const locale: Locale = localeSetting === null
+    ? "zh-CN"
+    : resolveLocale(localeSetting, navigator.languages || [navigator.language]);
   const boxRef = useRef<HTMLDivElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const userMenuButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    const next = resolveLocale(localeSetting, typeof navigator === "undefined" ? [] : navigator.languages || [navigator.language]);
-    // The browser preference is an external value; sync it once after hydration.
+    // Keep the server and the first browser render in sync before reading storage.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLocale(next);
-    document.documentElement.lang = next;
-  }, [localeSetting]);
+    setLocaleSetting(readLocaleSetting());
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -202,7 +206,7 @@ export function SiteHeader() {
             </>
           )}
           <label className="sr-only" htmlFor="site-locale">{t(locale, "language")}</label>
-          <select id="site-locale" aria-label={t(locale, "language")} value={localeSetting} onChange={(event) => setLocaleSetting(writeLocaleSetting(event.target.value))} className="h-8 rounded-md border border-line bg-white px-1.5 text-[11px] text-ink-soft">
+          <select id="site-locale" aria-label={t(locale, "language")} value={localeSetting ?? "auto"} onChange={(event) => setLocaleSetting(writeLocaleSetting(event.target.value))} className="h-8 rounded-md border border-line bg-white px-1.5 text-[11px] text-ink-soft">
             <option value="auto">{t(locale, "auto")}</option>
             <option value="zh-CN">{t(locale, "simplified")}</option>
             <option value="en-US">{t(locale, "english")}</option>

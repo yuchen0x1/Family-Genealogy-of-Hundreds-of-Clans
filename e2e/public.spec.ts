@@ -12,6 +12,24 @@ test.describe("公开页面与检索", () => {
     await expect(page.getByLabel("姓氏与族谱搜索")).toBeVisible();
   });
 
+  test("已保存的英文导航偏好不会导致首屏水合错误", async ({ page }) => {
+    const errors: string[] = [];
+    const hydrationError = /hydrat|Minified React error #41[89]|Minified React error #423/i;
+    page.on("pageerror", (error) => errors.push(error.message));
+    page.on("console", (message) => {
+      if (message.type() === "error" && hydrationError.test(message.text())) errors.push(message.text());
+    });
+    await page.addInitScript(() => localStorage.setItem("family-genealogy:locale", "en-US"));
+
+    await page.goto("/guide");
+    await expect(page.getByRole("heading", { name: "使用说明", exact: true })).toBeVisible();
+    const nav = page.getByRole("navigation", { name: "Primary navigation" });
+    await expect(nav.getByRole("link", { name: "Surnames" })).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("lang", "en-US");
+    await expect(page.getByRole("combobox", { name: "Language / 语言" })).toHaveValue("en-US");
+    expect(errors.filter((error) => hydrationError.test(error))).toEqual([]);
+  });
+
   test("全站搜索跳转到结果页并展示结果", async ({ page }) => {
     await page.goto("/");
     const box = page.getByLabel("姓氏与族谱搜索");
