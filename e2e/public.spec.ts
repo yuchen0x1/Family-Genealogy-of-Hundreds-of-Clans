@@ -23,9 +23,9 @@ test.describe("公开页面与检索", () => {
 
     await page.goto("/guide");
     await expect(page.getByRole("heading", { name: "使用说明", exact: true })).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("lang", "en-US");
     const nav = page.getByRole("navigation", { name: "Primary navigation" });
     await expect(nav.getByRole("link", { name: "Surnames" })).toBeVisible();
-    await expect(page.locator("html")).toHaveAttribute("lang", "en-US");
     await expect(page.getByRole("combobox", { name: "Language / 语言" })).toHaveValue("en-US");
     expect(errors.filter((error) => hydrationError.test(error))).toEqual([]);
   });
