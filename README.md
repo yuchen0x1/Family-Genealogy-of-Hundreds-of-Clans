@@ -43,11 +43,11 @@ English README: [README_EN.md](README_EN.md)
 
 ## 最新更新
 
-**v0.4.1 待发布** · 修复已保存英文偏好时的导航水合不一致，并更新 Effect 依赖以修复高危 ReDoS。桌面 / 主屏幕安装、离线重连和刷新选择继承自 v0.4.0。
+**v0.4.1 · 2026-11-20** · 修复已保存英文偏好时的导航水合不一致，并更新 Effect 依赖以修复高危 ReDoS。桌面 / 主屏幕安装、离线重连和刷新选择继承自 v0.4.0。
 
-截至 2026-11-20，`v0.4.0` 是没有附件的不可变 Release，未提供可校验的自托管包、依赖清单或构建来源证明。`v0.4.1` 通过完整发布校验后才提供新下载。
+`v0.4.1` 已通过完整发布校验，提供源码包、SHA-256 摘要、更新元数据和依赖清单，GitHub Release 证明已验证。`v0.4.0` 保留为没有附件的不可变历史发布。
 
-[发行状态与历史](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases) · [源码部署指南](docs/DEPLOYMENT.md)
+[下载 v0.4.1](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.4.1) · [源码部署指南](docs/DEPLOYMENT.md)
 
 [完整更新日志](docs/releases/release-notes.md)
 
