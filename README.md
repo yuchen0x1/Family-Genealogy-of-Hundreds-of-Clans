@@ -43,9 +43,11 @@ English README: [README_EN.md](README_EN.md)
 
 ## 最新更新
 
-**v0.4.0** · 将中华寻根安装到桌面或主屏幕。断网时可查看重连提示，站点部署更新后可先保存编辑，再确认刷新。自托管包附带校验、构建来源证明和依赖清单。
+**v0.4.1 待发布** · 修复已保存英文偏好时的导航水合不一致，并更新 Effect 依赖以修复高危 ReDoS。桌面 / 主屏幕安装、离线重连和刷新选择继承自 v0.4.0。
 
-[下载最新正式版](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/latest) · [全部发行记录](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases)
+截至 2026-11-20，`v0.4.0` 是没有附件的不可变 Release，未提供可校验的自托管包、依赖清单或构建来源证明。`v0.4.1` 通过完整发布校验后才提供新下载。
+
+[发行状态与历史](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases) · [源码部署指南](docs/DEPLOYMENT.md)
 
 [完整更新日志](docs/releases/release-notes.md)
 
