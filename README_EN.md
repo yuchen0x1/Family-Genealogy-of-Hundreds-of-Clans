@@ -35,7 +35,9 @@ A full-stack, real-implementation (no mock data) open-source platform combining 
 
 ## Latest Release
 
-**v0.4.0** adds desktop and home-screen installation, an offline reconnection page, and a prompt to refresh after saving changes. The self-hosted bundle includes checksums, build provenance, and a software bill of materials. [Downloads](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/latest) · [Release history](docs/releases/release-notes.md) · [Platform support](docs/PLATFORMS.md)
+**v0.4.1 is pending release.** It fixes navigation hydration when an English preference is saved and updates Effect to address a high-severity ReDoS vulnerability. Desktop / home-screen installation, offline reconnection, and refresh prompts are inherited from v0.4.0.
+
+As of 2026-11-20, the immutable `v0.4.0` release has no attached assets: no verifiable self-hosted bundle, dependency inventory, or build provenance is available for that release. Downloads for `v0.4.1` will be available only after the full publication checks pass. [Release status](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases) · [Source deployment](docs/DEPLOYMENT.md) · [Release history](docs/releases/release-notes.md) · [Platform support](docs/PLATFORMS.md)
 
 ## Features
 
