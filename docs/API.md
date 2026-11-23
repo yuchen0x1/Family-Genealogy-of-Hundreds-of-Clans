@@ -17,6 +17,8 @@
 会话使用 HttpOnly + SameSite Cookie `xungen_session`；数据库只存 token 的 SHA-256 摘要。除明确标注「公开」的接口外均需登录。请求可带 `Origin`，服务端 `assertSameOrigin` 会拒绝跨站写请求（`CSRF_REJECTED`）。
 
 ### 响应格式
+所有由统一 `route()` 包装的接口都会返回 `X-Request-ID` 响应头。客户端可以在反馈问题时一并提供该值；若请求带有安全字符集内的 `X-Request-ID`（最长 128 字符）则沿用，否则服务端生成新的 UUID。未预期的 500 错误会在响应 `details.requestId` 中返回同一关联 ID，便于从结构化日志定位请求；业务错误不会回显内部异常。
+
 ```jsonc
 // 成功
 { "ok": true, "data": { ... } }

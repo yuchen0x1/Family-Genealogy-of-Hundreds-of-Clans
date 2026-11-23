@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
-import { ok, route, getQuery } from "@/lib/api";
+import { ok, route, getQuery, ApiError } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
-import { searchAll, normalizeSearchTerm, type SearchCategory } from "@/lib/search";
+import { SEARCH_CATEGORIES, searchAll, normalizeSearchTerm, type SearchCategory } from "@/lib/search";
 import { cacheGet, cacheSet, rateLimit } from "@/lib/cache";
 import { clientIpHash } from "@/lib/api";
 
@@ -11,8 +11,14 @@ export const GET = route(async (req: NextRequest) => {
   const safeQuery = normalizeSearchTerm(q);
   const user = await getCurrentUser();
   const category = params.get("category");
+  if (category && !SEARCH_CATEGORIES.includes(category as SearchCategory)) {
+    throw new ApiError(400, "搜索分类无效", "INVALID_CATEGORY");
+  }
   const categories = category ? [category as SearchCategory] : undefined;
-  const limitPerGroup = Math.min(20, Number(params.get("limit")) || 8);
+  const requestedLimit = Number(params.get("limit"));
+  const limitPerGroup = Number.isFinite(requestedLimit) && requestedLimit > 0
+    ? Math.min(20, Math.floor(requestedLimit))
+    : 8;
 
   const permit = await rateLimit(`search:${clientIpHash(req)}`, 60, 60);
   if (!permit.allowed) return ok({ rateLimited: true, query: safeQuery, total: 0, groups: [] });
