@@ -10,12 +10,15 @@ const patchSchema = z.object({
   status: z.enum(["OPEN", "IN_REVIEW", "RESOLVED", "DISMISSED"]),
   resolution: z.string().trim().min(4, "请填写处理说明").max(1000),
 });
+const reportStatusSchema = z.enum(["OPEN", "IN_REVIEW", "RESOLVED", "DISMISSED"]);
 
 export const GET = route(async (req: NextRequest) => {
   await requireReviewer();
   const { page, pageSize, params } = getQuery(req);
   const status = params.get("status");
-  const where = status ? { status: status as never } : {};
+  const parsedStatus = status ? reportStatusSchema.safeParse(status) : null;
+  if (parsedStatus && !parsedStatus.success) throw new ApiError(400, "举报状态无效", "INVALID_STATUS");
+  const where = parsedStatus?.success ? { status: parsedStatus.data } : {};
   const [rows, total] = await Promise.all([
     prisma.report.findMany({
       where, orderBy: { createdAt: "desc" },

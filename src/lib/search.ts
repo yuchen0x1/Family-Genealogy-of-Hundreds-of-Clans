@@ -20,6 +20,7 @@ import type { AuthUser } from "./auth";
 import { truncate } from "./utils";
 
 export type SearchCategory = "surnames" | "figures" | "places" | "sources" | "families" | "members" | "posts";
+export const SEARCH_CATEGORIES: SearchCategory[] = ["surnames", "figures", "places", "sources", "families", "members", "posts"];
 export type SearchGroup = {
   key: SearchCategory;
   label: string;
@@ -80,7 +81,7 @@ export async function searchAll(
   const started = Date.now();
   const query = normalizeSearchTerm(rawQuery);
   const limit = Math.min(20, options.limitPerGroup ?? 8);
-  const wanted = new Set(options.categories ?? (["surnames", "figures", "places", "sources", "families", "members", "posts"] as SearchCategory[]));
+  const wanted = new Set(options.categories ?? SEARCH_CATEGORIES);
   const keys = pinyinKeys(query);
   const grams = bigrams(query);
   const groups: SearchGroup[] = [];

@@ -45,4 +45,23 @@ describe("route 路径参数防线", () => {
     expect(response.status).toBe(400);
     expect((await response.json()).error.code).toBe("INVALID_ID");
   });
+
+  it("为成功响应附加安全的请求关联 ID，并保留调用方 ID", async () => {
+    const wrapped = route(async () => ok({ reached: true }));
+    const response = await wrapped(
+      new NextRequest("https://genealogy.example/api/health", { headers: { "x-request-id": "trace_2026-01" } }),
+      { params: Promise.resolve({}) },
+    );
+    expect(response.headers.get("X-Request-ID")).toBe("trace_2026-01");
+  });
+
+  it("拒绝过长的请求 ID，并生成新的关联 ID", async () => {
+    const wrapped = route(async () => ok({ reached: true }));
+    const response = await wrapped(
+      new NextRequest("https://genealogy.example/api/health", { headers: { "x-request-id": "x".repeat(129) } }),
+      { params: Promise.resolve({}) },
+    );
+    const id = response.headers.get("X-Request-ID");
+    expect(id).toMatch(/^[0-9a-f-]{36}$/);
+  });
 });

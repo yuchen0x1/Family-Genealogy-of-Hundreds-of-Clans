@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { z, ZodError, ZodTypeAny } from "zod";
 import { Prisma } from "@prisma/client";
 import { anonymizeIp } from "./crypto";
@@ -24,7 +25,15 @@ export function fail(message: string, status = 400, code = "BAD_REQUEST", detail
 }
 
 /** 统一错误处理：Zod 校验错误 / Prisma 约束错误 / 业务异常 均转为结构化响应。 */
-export function handleError(error: unknown) {
+const REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
+
+/** Use a caller-provided correlation id only when it is a safe, bounded token. */
+export function requestId(req: Request): string {
+  const supplied = req.headers.get("x-request-id")?.trim();
+  return supplied && REQUEST_ID_PATTERN.test(supplied) ? supplied : randomUUID();
+}
+
+export function handleError(error: unknown, correlationId?: string) {
   if (error instanceof ApiError) {
     return fail(error.message, error.status, error.code, error.details);
   }
@@ -43,8 +52,8 @@ export function handleError(error: unknown) {
     }
     if (error.code === "P2025") return fail("记录不存在", 404, "NOT_FOUND");
   }
-  console.error("[api] unhandled:", error);
-  return fail("服务器内部错误", 500, "INTERNAL_ERROR");
+  console.error("[api] unhandled:", { requestId: correlationId, error });
+  return fail("服务器内部错误", 500, "INTERNAL_ERROR", correlationId ? { requestId: correlationId } : undefined);
 }
 
 export type RouteContext<P = Record<string, string>> = { params: Promise<P> };
@@ -69,6 +78,7 @@ export function route<P = Record<string, string>>(
   handler: (req: NextRequest, ctx: RouteContext<P>) => Promise<NextResponse>,
 ) {
   return async (req: NextRequest, ctx: RouteContext<P>): Promise<NextResponse> => {
+    const correlationId = requestId(req);
     try {
       const params = (await ctx?.params) ?? ({} as P);
       for (const [name, value] of Object.entries(params as Record<string, string>)) {
@@ -83,9 +93,13 @@ export function route<P = Record<string, string>>(
           WRITE_FALLBACK_WINDOW_SECONDS,
         );
       }
-      return await handler(req, { params: Promise.resolve(params) });
+      const response = await handler(req, { params: Promise.resolve(params) });
+      response.headers.set("X-Request-ID", correlationId);
+      return response;
     } catch (error) {
-      return handleError(error);
+      const response = handleError(error, correlationId);
+      response.headers.set("X-Request-ID", correlationId);
+      return response;
     }
   };
 }
