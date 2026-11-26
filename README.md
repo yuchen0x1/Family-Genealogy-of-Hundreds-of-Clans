@@ -43,11 +43,11 @@ English README: [README_EN.md](README_EN.md)
 
 ## 最新更新
 
-**v0.4.2 · 2026-11-23** · 维护性补丁：所有 API 响应新增 `X-Request-ID` 请求关联头，搜索分类/条数与管理后台举报状态筛选在边界校验。桌面 / 主屏幕安装、离线重连和刷新选择继承自 v0.4.0，导航语言修复继承自 v0.4.1。
+**v0.4.3 · 2026-11-26** · 安全与稳定性补丁：修复协作者权限提升、全站搜索可见性越权与关联档案字段泄露，并修复图谱渲染、水合和导入导出缺陷。安装旧版本的用户会在应用内收到更新提示。
 
-`v0.4.2` 已通过完整发布校验，提供源码包、SHA-256 摘要、更新元数据和依赖清单，GitHub Release 证明已验证。`v0.4.0` 保留为没有附件的不可变历史发布。
+`v0.4.3` 已通过完整发布校验，提供源码包、SHA-256 摘要、更新元数据和依赖清单，GitHub Release 证明已验证。`v0.4.0` 保留为没有附件的不可变历史发布。
 
-[下载 v0.4.2](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.4.2) · [源码部署指南](docs/DEPLOYMENT.md)
+[下载 v0.4.3](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.4.3) · [源码部署指南](docs/DEPLOYMENT.md)
 
 [完整更新日志](docs/releases/release-notes.md)
 

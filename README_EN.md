@@ -35,9 +35,9 @@ A full-stack, real-implementation (no mock data) open-source platform combining 
 
 ## Latest Release
 
-**v0.4.2 · 2026-11-23.** Maintenance patch: every API response now carries an `X-Request-ID` correlation header, and search category/page-size plus admin report status filters are validated at the boundary. Desktop / home-screen installation, offline reconnection, and refresh prompts are inherited from v0.4.0; the navigation-language fix is inherited from v0.4.1.
+**v0.4.3 · 2026-11-26.** Security and stability patch: it closes collaborator privilege escalation, a public-search visibility bypass, and exposure of internal document fields, and fixes chart rendering, hydration, and import/export defects. Existing installations receive the in-app update prompt.
 
-The release passed the full publication checks and includes a source bundle, SHA-256 checksum, update metadata, and dependency inventory. Its GitHub Release attestation is verified. The immutable `v0.4.0` release remains an asset-free historical record. [Download v0.4.2](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.4.2) · [Source deployment](docs/DEPLOYMENT.md) · [Release history](docs/releases/release-notes.md) · [Platform support](docs/PLATFORMS.md)
+The release passed the full publication checks and includes a source bundle, SHA-256 checksum, update metadata, and dependency inventory. Its GitHub Release attestation is verified. The immutable `v0.4.0` release remains an asset-free historical record. [Download v0.4.3](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.4.3) · [Source deployment](docs/DEPLOYMENT.md) · [Release history](docs/releases/release-notes.md) · [Platform support](docs/PLATFORMS.md)
 
 ## Features
 
