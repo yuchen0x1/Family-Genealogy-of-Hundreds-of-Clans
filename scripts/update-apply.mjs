@@ -2,7 +2,7 @@
  * 独立安装进程（detached）。
  *
  * 由应用在下载并解包完成后启动，脱离 Web 进程的生命周期独立运行：
- * 覆盖源码 → 安装依赖 → 生成 Prisma Client → 构建 → 重启。
+ * 覆盖源码 → 安装依赖 → 生成 Prisma Client → 构建 → 数据库迁移 → 重启。
  * 之所以必须独立：构建会替换 .next，在运行中的进程里构建等于自己踩自己的产物；
  * 而重启本身就是要结束当前进程。
  *
@@ -310,7 +310,8 @@ async function main() {
 
   let prevDir = null;
   let rollbackTargets = [];
-  let buildSucceeded = false;
+  let installationSucceeded = false;
+  let migrationAttempted = false;
   try {
     ({ prevDir, rollbackTargets } = await replaceTree());
 
@@ -336,8 +337,15 @@ async function main() {
     if (build.code !== 0) {
       throw new Error(`构建失败（退出码 ${build.code}）：${build.out.slice(-2000)}`);
     }
-    buildSucceeded = true;
-    await note("info", "构建完成；旧源码、依赖和构建产物备份已保留，供重启失败时人工恢复");
+    // 先确认构建可用，再修改数据库；迁移失败也必须恢复原来的运行文件。
+    await patchJob({ progress: 96, message: "正在应用数据库迁移" });
+    migrationAttempted = true;
+    const migrate = run("pnpm", ["exec", "prisma", "migrate", "deploy"], INSTALL_TIMEOUT_MS);
+    if (migrate.code !== 0) {
+      throw new Error(`数据库迁移失败：${migrate.out.slice(-1500)}`);
+    }
+    installationSucceeded = true;
+    await note("info", "构建与数据库迁移完成；旧源码、依赖和构建产物备份已保留，供重启失败时人工恢复");
 
     // 记录安装结果，供重启后自愈逻辑与运维排查使用
     await writeFile(
@@ -382,7 +390,7 @@ async function main() {
     const message = err instanceof Error ? err.message : String(err);
     await note("error", message);
     let rollbackSucceeded = false;
-    if (prevDir && !buildSucceeded) {
+    if (prevDir && !installationSucceeded) {
       try {
         await restoreBackup(prevDir, rollbackTargets);
         rollbackSucceeded = true;
@@ -391,15 +399,20 @@ async function main() {
         await note("error", `回滚不完整，需要人工检查备份目录 ${prevDir}：${rollbackErr.message}`);
       }
     } else if (prevDir) {
-      await note("warn", `构建已完成，未自动回滚；更新前备份保留在 ${prevDir}`);
+      await note("warn", `构建与数据库迁移已完成，未自动回滚；更新前备份保留在 ${prevDir}`);
+    }
+    if (migrationAttempted && !installationSucceeded) {
+      await note("warn", "数据库迁移可能部分应用；文件回滚不会还原数据库，请检查迁移状态，必要时使用更新前备份恢复数据库");
     }
     await patchJob({
       status: "FAILED",
       progress: 100,
-      message: buildSucceeded
-        ? "构建已完成，但重启或收尾失败；更新前备份已保留"
+      message: installationSucceeded
+        ? "安装已完成，但重启或收尾失败；更新前备份已保留"
         : rollbackSucceeded
-          ? "更新失败，已回滚到更新前状态"
+          ? migrationAttempted
+            ? "更新失败，文件已回滚；数据库迁移需人工确认"
+            : "更新失败，已回滚到更新前状态"
           : "更新失败，回滚未能完整确认",
       error: message.slice(0, 2000),
       finishedAt: new Date(),

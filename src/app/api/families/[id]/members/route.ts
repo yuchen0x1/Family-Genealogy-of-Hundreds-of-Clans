@@ -91,6 +91,7 @@ export const POST = route<Ctx>(async (req: NextRequest, ctx) => {
       generationChar: data.generationChar ?? null,
       generationConfirmed: data.generationConfirmed ?? false,
       branchId: data.branchId ?? null,
+      verification: data.verification,
       visibility,
       sensitiveDataEncrypted: data.sensitiveData ? encryptSensitive(data.sensitiveData) : null,
       createdById: user!.id,

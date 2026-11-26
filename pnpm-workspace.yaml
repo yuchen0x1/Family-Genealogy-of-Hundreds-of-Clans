@@ -29,3 +29,5 @@ overrides:
   # @prisma/config@6 pulls effect <=3.22.0, affected by GHSA-7589-6fvf-x4pw (ReDoS).
   # Pin the first patched 3.x release until Prisma's dependency range moves forward.
   effect: 3.22.1
+  # GHSA-3g3m-2fjr-6pw4: cancelled glob traversals must stop accessing files.
+  "glob@>=9.0.0 <14.0.2": 14.0.2

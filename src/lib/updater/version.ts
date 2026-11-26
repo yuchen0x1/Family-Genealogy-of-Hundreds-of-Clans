@@ -78,11 +78,10 @@ export function compareVersions(a: string, b: string): number {
     if (sa === undefined) return -1;
     if (sb === undefined) return 1;
     if (sa === sb) continue;
-    const na = Number(sa);
-    const nb = Number(sb);
-    const aIsNum = Number.isFinite(na) && String(na) === sa;
-    const bIsNum = Number.isFinite(nb) && String(nb) === sb;
-    if (aIsNum && bIsNum) return na > nb ? 1 : -1;
+    const aIsNum = /^\d+$/.test(sa);
+    const bIsNum = /^\d+$/.test(sb);
+    // SemVer 数字预发布标识没有安全整数上限；按位数和字典序比较，避免 Number 舍入。
+    if (aIsNum && bIsNum) return sa.length !== sb.length ? (sa.length > sb.length ? 1 : -1) : (sa > sb ? 1 : -1);
     if (aIsNum) return -1; // 数字标识优先级低于字母标识
     if (bIsNum) return 1;
     return sa > sb ? 1 : -1;

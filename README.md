@@ -43,11 +43,11 @@ English README: [README_EN.md](README_EN.md)
 
 ## 最新更新
 
-**v0.4.3 · 2026-11-26** · 安全与稳定性补丁：修复协作者权限提升、全站搜索可见性越权与关联档案字段泄露，并修复图谱渲染、水合和导入导出缺陷。安装旧版本的用户会在应用内收到更新提示。
+**v0.4.4 · 2026-11-27** · 安全与稳定性补丁：修复人物编辑意外重置、旧邀请重新授权、关系详情和历史档案隐私边界，并完善登录状态、更新校验与备份恢复。管理员可在应用内检查更新。
 
-`v0.4.3` 已通过完整发布校验，提供源码包、SHA-256 摘要、更新元数据和依赖清单，GitHub Release 证明已验证。`v0.4.0` 保留为没有附件的不可变历史发布。
+发布流水线在全部门禁通过后公开源码包、SHA-256 摘要、更新元数据和依赖清单，并生成 GitHub 构建来源证明。`v0.4.0` 保留为没有附件的不可变历史发布。
 
-[下载 v0.4.3](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.4.3) · [源码部署指南](docs/DEPLOYMENT.md)
+[下载 v0.4.4](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.4.4) · [源码部署指南](docs/DEPLOYMENT.md)
 
 [完整更新日志](docs/releases/release-notes.md)
 

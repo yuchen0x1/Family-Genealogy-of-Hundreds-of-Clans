@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import {
   UserCog, ShieldCheck, Bell, Users, Database, KeyRound, Monitor,
@@ -44,7 +43,6 @@ const PRIVACY_ITEMS = [
 ];
 
 export function MeCenter({ initialTab }: { initialTab?: string }) {
-  const router = useRouter();
   const [tab, setTab] = useState<Tab>(TABS.some((t) => t.key === initialTab) ? initialTab as Tab : "profile");
   const [notice, setNotice] = useState<NoticeData | null>(null);
   const [busy, setBusy] = useState(false);
@@ -63,8 +61,8 @@ export function MeCenter({ initialTab }: { initialTab?: string }) {
   async function logout() {
     try {
       await apiRequest("/api/auth/logout", { method: "POST", body: {} });
-      await refreshMe();
-      router.push("/");
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- Discard identity-scoped client caches.
+      window.location.assign("/");
     } catch (err) { setNotice(parseError(err)); }
   }
 
@@ -112,8 +110,12 @@ export function MeCenter({ initialTab }: { initialTab?: string }) {
     try {
       const result = await apiRequest<{ notice: string }>(`/api/me/sessions${id ? `?id=${id}` : "?all=1"}`, { method: "DELETE" });
       setNotice({ kind: "success", title: "会话已撤销", lines: [result.notice] });
+      if (!id || sessions?.some((session) => session.id === id && session.current)) {
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- Discard identity-scoped client caches.
+        window.location.assign("/login");
+        return;
+      }
       await refreshSessions();
-      if (!id) router.push("/login");
     } catch (err) { setNotice(parseError(err)); }
   }
 
@@ -144,7 +146,10 @@ export function MeCenter({ initialTab }: { initialTab?: string }) {
       });
       setDeleteOpen(false);
       setNotice({ kind: "success", title: "账号已注销", lines: [result.notice, `处理项：${Object.entries(result.summary).map(([k, v]) => `${k} ${v}`).join("、")}`] });
-      setTimeout(() => router.push("/"), 1500);
+      setTimeout(() => {
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- Discard identity-scoped client caches.
+        window.location.assign("/");
+      }, 1500);
     } catch (err) { setNotice(parseError(err)); setBusy(false); }
   }
 

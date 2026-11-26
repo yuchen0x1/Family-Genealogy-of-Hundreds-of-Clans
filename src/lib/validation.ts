@@ -64,11 +64,18 @@ export const memberCreateSchema = z.object({
   generationChar: z.string().max(10).optional().nullable(),
   generationConfirmed: z.boolean().optional(),
   branchId: z.string().uuid().optional().nullable(),
+  verification: z.enum(["UNVERIFIED", "PENDING", "VERIFIED", "DISPUTED", "REJECTED"]).default("UNVERIFIED"),
   visibility: z.enum(["PRIVATE", "FAMILY", "PUBLIC"]).default("PRIVATE"),
   sensitiveData: z.string().max(4000).optional().nullable(),
 });
 
-export const memberUpdateSchema = memberCreateSchema.partial();
+// Zod 4 applies defaults inside optional properties; PATCH must preserve omitted fields.
+export const memberUpdateSchema = memberCreateSchema.partial().extend({
+  gender: memberCreateSchema.shape.gender.unwrap().optional(),
+  isLiving: memberCreateSchema.shape.isLiving.unwrap().optional(),
+  verification: memberCreateSchema.shape.verification.unwrap().optional(),
+  visibility: memberCreateSchema.shape.visibility.unwrap().optional(),
+});
 
 export const relationshipCreateSchema = z.object({
   fromPersonId: z.string().uuid(),

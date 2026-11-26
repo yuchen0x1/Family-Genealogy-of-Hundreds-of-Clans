@@ -19,6 +19,14 @@ export interface ValidationReport {
   warnings: string[];
 }
 
+/** Public relationship responses share the same internal-metadata boundary. */
+export function publicRelationshipView<T extends object>(relation: T, hasAccess: boolean) {
+  if (hasAccess) return relation;
+  const view = { ...relation } as Record<string, unknown>;
+  for (const key of ["notes", "sourceId", "documentId", "createdById"]) delete view[key];
+  return view;
+}
+
 /**
  * 关系写入前的完整校验。
  * 关键：防止血缘循环、超过两位生物学父母、自反关系、重复关系、

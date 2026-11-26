@@ -8,8 +8,10 @@
 2. 通过后创建 GitHub Release，并上传 `xungen-<version>.tar.gz`、`.sha256`、`.update.json`。
 3. 管理员后台读取配置的 GitHub 仓库，检查稳定版 Release 或 `main` 分支。
 4. 稳定版只接受名为 `xungen-<version>.tar.gz` 的 Release 资产；下载后校验大小和 SHA-256，再检查归档安全性与 `package.json` 版本，最后才进入安装。
-5. `SOURCE` 驱动交给独立进程安装依赖、构建并由 systemd/pm2 拉起；`DOCKER` 驱动写入共享标记，由 updater sidecar 使用 staging 源码重建 app 镜像。
+5. `SOURCE` 驱动交给独立进程安装依赖、构建、执行 `prisma migrate deploy`，然后由 systemd/pm2 拉起；`DOCKER` 驱动写入共享标记，由 updater sidecar 使用 staging 源码重建 app 镜像。
 6. 备份、下载、校验、构建或健康确认失败时保留旧版本并记录任务日志。
+
+v0.4.4 起 SOURCE 安装脚本增加构建后的数据库迁移步骤。旧实例首次安装 v0.4.4 仍运行原脚本，本版没有新增迁移；升级完成后的后续更新才使用新步骤。迁移失败会恢复旧源码、依赖和构建产物，但不会自动撤销已经应用的数据库变更，需检查迁移状态并按需恢复数据库备份。
 
 ## 配置
 

@@ -23,6 +23,8 @@ export const POST = route<Ctx>(async (req, ctx) => {
         familyId: id,
         deletedAt: member.deletedAt,
         OR: [{ fromPersonId: memberId }, { toPersonId: memberId }],
+        fromPerson: { deletedAt: null },
+        toPerson: { deletedAt: null },
       },
       data: { deletedAt: null },
     }),

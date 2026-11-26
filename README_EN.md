@@ -35,9 +35,9 @@ A full-stack, real-implementation (no mock data) open-source platform combining 
 
 ## Latest Release
 
-**v0.4.3 · 2026-11-26.** Security and stability patch: it closes collaborator privilege escalation, a public-search visibility bypass, and exposure of internal document fields, and fixes chart rendering, hydration, and import/export defects. Existing installations receive the in-app update prompt.
+**v0.4.4 · 2026-11-27.** Security and stability patch: fixes unintended person-field resets, revoked invitation grants, relationship and historical document privacy boundaries, login state, update validation, and backup restoration. Administrators can check for updates in the app.
 
-The release passed the full publication checks and includes a source bundle, SHA-256 checksum, update metadata, and dependency inventory. Its GitHub Release attestation is verified. The immutable `v0.4.0` release remains an asset-free historical record. [Download v0.4.3](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.4.3) · [Source deployment](docs/DEPLOYMENT.md) · [Release history](docs/releases/release-notes.md) · [Platform support](docs/PLATFORMS.md)
+The publication workflow exposes the source bundle, SHA-256 checksum, update metadata, and dependency inventory only after all checks pass, and generates GitHub build provenance. The immutable `v0.4.0` release remains an asset-free historical record. [Download v0.4.4](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.4.4) · [Source deployment](docs/DEPLOYMENT.md) · [Release history](docs/releases/release-notes.md) · [Platform support](docs/PLATFORMS.md)
 
 ## Features
 

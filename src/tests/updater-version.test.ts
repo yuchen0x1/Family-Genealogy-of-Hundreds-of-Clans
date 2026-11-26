@@ -54,6 +54,13 @@ describe("更新器版本归一化与比较", () => {
     expect(compareVersions("not-a-version", "also-invalid")).toBe(0);
   });
 
+  it("任意长度的数字预发布标识仍按数值顺序比较", () => {
+    expect(compareVersions("1.0.0-rc.9007199254740992", "1.0.0-rc.9007199254740993")).toBe(-1);
+    expect(compareVersions("1.0.0-rc.99999999999999999999999999999", "1.0.0-rc.100000000000000000000000000000")).toBe(-1);
+    expect(compareVersions("1.0.0-99999999999999999999999999999", "1.0.0-alpha")).toBe(-1);
+    expect(compareVersions("1.0.0-alpha", "1.0.0-99999999999999999999999999999")).toBe(1);
+  });
+
   it("读取本地版本时优先 package.json，并注入构建信息", () => {
     process.env.APP_VERSION = "9.9.9";
     process.env.APP_BUILD_SHA = "abcdef1234567890";

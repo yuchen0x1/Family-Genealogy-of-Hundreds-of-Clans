@@ -100,7 +100,7 @@ async function ensureDatabases() {
       }
     }
   } finally {
-    await client.close();
+    await client.end();
   }
 }
 

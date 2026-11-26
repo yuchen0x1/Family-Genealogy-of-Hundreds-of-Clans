@@ -2,13 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/primitives";
 import { apiRequest } from "@/lib/client";
 
-export function AuthForm({ mode }: { mode: "login" | "register" }) {
-  const router = useRouter();
+export function AuthForm({ mode, returnTo }: { mode: "login" | "register"; returnTo?: string | null }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -28,8 +26,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           ? { email, password }
           : { email, password, displayName, agreeTerms: true },
       });
-      router.push(mode === "login" ? "/me" : "/families?mine=1");
-      router.refresh();
+      // A fresh document also discards cached data from the previous identity.
+      window.location.assign(returnTo || (mode === "login" ? "/me" : "/families?mine=1"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "操作失败，请重试");
     } finally {
@@ -65,9 +63,9 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       </Button>
       <div className="text-center text-xs text-graphite">
         {mode === "login" ? (
-          <>还没有账号？<Link href="/register" className="text-navy underline">免费注册</Link></>
+          <>还没有账号？<Link href={returnTo ? `/register?next=${encodeURIComponent(returnTo)}` : "/register"} className="text-navy underline">免费注册</Link></>
         ) : (
-          <>已有账号？<Link href="/login" className="text-navy underline">直接登录</Link></>
+          <>已有账号？<Link href={returnTo ? `/login?next=${encodeURIComponent(returnTo)}` : "/login"} className="text-navy underline">直接登录</Link></>
         )}
       </div>
       {mode === "login" && (

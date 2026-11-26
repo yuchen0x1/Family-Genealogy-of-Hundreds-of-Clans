@@ -35,10 +35,11 @@ import {
   restoreStorageSnapshot,
   verifyStorageSnapshot,
 } from "./storage-snapshot.mjs";
+import { parseBackupKeep } from "./backup-safety.mjs";
+import { restoreSnapshot } from "./backup-restore.mjs";
 
 const { Client } = pg;
 const ROOT = process.cwd();
-const KEEP = Math.max(1, Number(process.env.BACKUP_KEEP || 7));
 
 function loadEnv() {
   const file = path.join(ROOT, ".env");
@@ -53,6 +54,7 @@ function loadEnv() {
   }
 }
 loadEnv();
+const KEEP = parseBackupKeep(process.env.BACKUP_KEEP);
 
 const BACKUP_DIR = path.resolve(ROOT, process.env.BACKUP_DIR || "./backups");
 const FILE_RE = /^(xungen-\d{8}-\d{6})\.(?:dump|dump\.sha256|snapshot\.json\.gz|snapshot\.json\.gz\.sha256|manifest\.json|files)$/;
@@ -146,18 +148,17 @@ function serializeValue(v, udt) {
   return v; // Date / string / number / boolean / array 由 JSON 与 pg 驱动各司其职
 }
 
-function deserializeValue(v, udt) {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "object" && !Array.isArray(v) && typeof v.__bytea === "string") return Buffer.from(v.__bytea, "base64");
-  if (typeof v === "object" && !Array.isArray(v) && typeof v.__json === "string") return v.__json;
-  if ((udt === "timestamp" || udt === "timestamptz" || udt === "date") && typeof v === "string") return v;
-  return v;
-}
-
 async function withClient(cfg, fn) {
   const client = new Client({
     host: cfg.host, port: cfg.port, user: cfg.user, password: cfg.password,
     database: cfg.database, connectionTimeoutMillis: 15_000,
+    types: {
+      getTypeParser(oid, format) {
+        // Preserve wall-clock values instead of converting timestamp/date through the host timezone.
+        if (format !== "binary" && (oid === 1114 || oid === 1082)) return (value) => value;
+        return pg.types.getTypeParser(oid, format);
+      },
+    },
   });
   await client.connect();
   try { return await fn(client); } finally { await client.end().catch(() => undefined); }
@@ -252,64 +253,8 @@ function verifySnapshot(file) {
   return { bytes: raw.length, sha256: sha256(raw), verifiedBy: "gzip + 行数/列完整性校验", snapshot };
 }
 
-/** 无 replica 权限时按外键依赖做拓扑排序（忽略自引用边）。 */
-async function dependencyOrder(client, tables) {
-  const fk = await client.query(`
-    SELECT DISTINCT tc.table_name AS child, ccu.table_name AS parent
-    FROM information_schema.table_constraints tc
-    JOIN information_schema.constraint_column_usage ccu
-      ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema
-    WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = 'public'`);
-  const names = new Set(tables.map((t) => t.name));
-  const deps = new Map([...names].map((n) => [n, new Set()]));
-  for (const { child, parent } of fk.rows) {
-    if (names.has(child) && names.has(parent) && child !== parent) deps.get(child).add(parent);
-  }
-  const ordered = [];
-  const remaining = new Set(names);
-  while (remaining.size) {
-    const ready = [...remaining].filter((n) => [...deps.get(n)].every((p) => !remaining.has(p)));
-    if (!ready.length) throw new Error("外键存在无法自动排序的环，请在具备 session_replication_role 权限的账号下恢复");
-    for (const n of ready.sort()) { ordered.push(n); remaining.delete(n); }
-  }
-  return ordered;
-}
-
 async function snapshotRestore(cfg, snapshot) {
-  return withClient(cfg, async (client) => {
-    for (const t of snapshot.tables) {
-      const r = await client.query(`SELECT count(*)::int AS n FROM "public".${quote(t.name)}`);
-      if (r.rows[0].n > 0) throw new Error(`目标表 ${t.name} 已有 ${r.rows[0].n} 行数据，为避免覆盖拒绝恢复`);
-    }
-    let replica = false;
-    await client.query("BEGIN");
-    try {
-      try { await client.query("SET session_replication_role = replica"); replica = true; }
-      catch { /* 非超级用户：改用外键拓扑顺序插入 */ }
-      const order = replica ? snapshot.tables.map((t) => t.name) : await dependencyOrder(client, snapshot.tables);
-      const byName = new Map(snapshot.tables.map((t) => [t.name, t]));
-      let inserted = 0;
-      for (const name of order) {
-        const t = byName.get(name);
-        if (!t || !t.rows.length) continue;
-        const cols = t.columns.map(quote).join(", ");
-        const ph = t.columns.map((_, i) => `$${i + 1}`).join(", ");
-        const sql = `INSERT INTO "public".${quote(name)} (${cols}) VALUES (${ph})`;
-        for (const row of t.rows) {
-          const values = t.columns.map((c, i) => deserializeValue(row[c], t.columnTypes[i]));
-          await client.query(sql, values);
-          inserted++;
-        }
-      }
-      await client.query("COMMIT");
-      return inserted;
-    } catch (e) {
-      await client.query("ROLLBACK").catch(() => undefined);
-      throw e;
-    } finally {
-      if (replica) await client.query("SET session_replication_role = DEFAULT").catch(() => undefined);
-    }
-  });
+  return withClient(cfg, (client) => restoreSnapshot(client, snapshot));
 }
 
 // ---------------- 通用流程 ----------------

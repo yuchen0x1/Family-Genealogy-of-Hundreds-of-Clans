@@ -30,6 +30,8 @@ export const GET = route<Ctx>(async (req: NextRequest, ctx) => {
   if (versionParam) {
     const n = Number(versionParam);
     if (!Number.isInteger(n) || n < 1) throw new ApiError(400, "版本号无效", "INVALID_VERSION");
+    // Approval applies to the current file; older contents may never have been approved.
+    if (!hasAccess && n !== doc.currentVersion) throw new ApiError(404, "版本不存在", "NOT_FOUND");
     const v = await prisma.documentVersion.findFirst({ where: { documentId: docId, versionNumber: n } });
     if (!v) throw new ApiError(404, "版本不存在", "NOT_FOUND");
     storageKey = v.storageKey;
