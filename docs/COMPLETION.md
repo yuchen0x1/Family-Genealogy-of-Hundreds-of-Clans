@@ -30,7 +30,7 @@
 
 | 交付物 | 路径 |
 | --- | --- |
-| 完整源码 | `src/`（`src/app/` 20 个页面、68 个 API 路由、`src/components/`、`src/lib/`） |
+| 完整源码 | `src/`（`src/app/` 20 个页面、69 个 API 路由、`src/components/`、`src/lib/`） |
 | 数据库结构与 ER 模型 | `prisma/schema.prisma`（48 个 model，含枚举、外键、索引、唯一约束、软删除、时间戳） |
 | 迁移文件 | `prisma/migrations/` 6 个 SQL 迁移（init / search_indexes / place_review / perf_indexes / add_update_jobs / member_surname_index）+ `migration_lock.toml` |
 | seed 与史料定义 | `prisma/seed.ts`、`prisma/seed-data.ts`（史料来源、姓氏、地名、迁徙、演示数据，明确标注演示与可信程度） |
@@ -68,7 +68,7 @@
 | --- | --- | --- |
 | Docker / Compose 镜像构建 | 配置已交付，**本机未验证**（`wsl.exe` 被环境策略阻断） | 目标服务器执行 `docker compose up -d --build` 并按 `DEPLOYMENT.md` 验收 |
 | 生产 HTTPS 证书 / 域名 / HSTS 预加载 | 仅 Nginx 配置 + 自签证书生成脚本 | 受信任 CA 证书与自动续期 |
-| S3 兼容对象存储 | 存储抽象层与上传校验已实现；未配置凭据时返回明确依赖错误 | Endpoint、Bucket、AccessKey、SecretKey |
+| S3 兼容对象存储 | 预留接口；当前仅实现本地驱动，`STORAGE_DRIVER=s3` 会返回明确依赖错误 | 完成 S3 适配器实现与联调（Endpoint、Bucket、AccessKey、SecretKey） |
 | 外部 OCR | 人工录入待校对文本可用；自动识别返回 `OCR_NOT_CONFIGURED` | `OCR_API_URL` / `OCR_API_KEY` |
 | PostGIS | 未启用；迁徙地图使用本地合规行政区划 GeoJSON，不依赖空间扩展 | 若需空间查询，改用 PostGIS 镜像并新增迁移 |
 | Meilisearch / OpenSearch / zhparser 中文分词 | 未接入；当前为 `pg_trgm` + `unaccent` + 中文 2-gram + `pinyin-pro`，接口已预留 `searchProvider` 升级位 | 搜索服务部署与索引同步链路 |

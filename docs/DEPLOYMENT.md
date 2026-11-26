@@ -144,7 +144,7 @@ node scripts/backup.mjs --restore-files <dump> --i-understand  # pg_restore cust
 | 上传 413 | `MAX_UPLOAD_MB` 与 Nginx `client_max_body_size` 需同步调大 |
 | 下载 404 `FILE_MISSING` | 上传数据卷未持久化或文件被清理；从备份/对象存储恢复 |
 | OCR 503 | 未配置 `OCR_API_URL`/`OCR_API_KEY`；可先用人工录入待校对文本 |
-| S3 报错 | 未填真实凭据时明确返回依赖错误，不会静默降级 |
+| 选择 s3 驱动 | 当前版本仅实现 `local` 驱动；`STORAGE_DRIVER=s3` 会明确返回依赖错误，请改回 `local` |
 | 私有族谱 403/404 | 符合预期：无权访问私有对象一律不暴露存在性 |
 
 审计日志位于后台「审计日志」页，记录关键写操作的 `before/after`、IP 摘要与 User-Agent。

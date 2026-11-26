@@ -35,6 +35,4 @@ jobs:
             --pattern "xungen-${version}.update.json" --dir "$dir"
           node scripts/release-assets.mjs verify "$tag" "$dir"
           grep -Fq -- "## [$version]" CHANGELOG.md
-          if [[ "$tag" != v0.3.2 ]]; then
-            gh attestation verify "$dir/$name" --repo "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/ci.yml"
-          fi
+          gh attestation verify "$dir/$name" --repo "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/ci.yml"

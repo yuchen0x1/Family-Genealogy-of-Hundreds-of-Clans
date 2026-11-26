@@ -35,9 +35,9 @@ A full-stack, real-implementation (no mock data) open-source platform combining 
 
 ## Latest Release
 
-**v0.4.1 · 2026-11-20.** It fixes navigation hydration when an English preference is saved and updates Effect to address a high-severity ReDoS vulnerability. Desktop / home-screen installation, offline reconnection, and refresh prompts are inherited from v0.4.0.
+**v0.4.2 · 2026-11-23.** Maintenance patch: every API response now carries an `X-Request-ID` correlation header, and search category/page-size plus admin report status filters are validated at the boundary. Desktop / home-screen installation, offline reconnection, and refresh prompts are inherited from v0.4.0; the navigation-language fix is inherited from v0.4.1.
 
-The release passed the full publication checks and includes a source bundle, SHA-256 checksum, update metadata, and dependency inventory. Its GitHub Release attestation is verified. The immutable `v0.4.0` release remains an asset-free historical record. [Download v0.4.1](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.4.1) · [Source deployment](docs/DEPLOYMENT.md) · [Release history](docs/releases/release-notes.md) · [Platform support](docs/PLATFORMS.md)
+The release passed the full publication checks and includes a source bundle, SHA-256 checksum, update metadata, and dependency inventory. Its GitHub Release attestation is verified. The immutable `v0.4.0` release remains an asset-free historical record. [Download v0.4.2](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.4.2) · [Source deployment](docs/DEPLOYMENT.md) · [Release history](docs/releases/release-notes.md) · [Platform support](docs/PLATFORMS.md)
 
 ## Features
 
@@ -83,12 +83,12 @@ Not claimed: third-party penetration testing, WAF/CDN, production TLS certificat
 
 | Layer | Choice (from `package.json`, verified by build) |
 | --- | --- |
-| Frontend | Next.js 16.4.5 (App Router / Turbopack), React 19.3.1, TypeScript 6.0.3, Tailwind CSS v4, SWR, ECharts |
+| Frontend | Next.js 16.4.6 (App Router / Turbopack), React 19.3.1, TypeScript 6.0.3, Tailwind CSS v4, SWR, ECharts |
 | Backend | 69 Route Handlers, Zod, scrypt password hashing, AES-256-GCM field encryption |
 | Database | PostgreSQL 17, Prisma 6.19 (48 models / 6 migrations), `pg_trgm` + Chinese 2-gram + pinyin search keys |
 | Cache | Redis (auto-degrades to in-process cache when unavailable) |
-| Storage | Local non-public directory (default) / S3-compatible object storage (opt-in) |
-| Testing | Vitest (243 passed / 21 skipped), 5 HTTP smoke suites (323 checks), Playwright E2E (11 passed / 1 skipped), security audit (42), perf baseline |
+| Storage | Local non-public directory (the only implemented driver; S3-compatible drivers are a reserved interface) |
+| Testing | Vitest (266 passed / 6 skipped), 5 HTTP smoke suites (323 checks), Playwright E2E (11 passed / 1 skipped), security audit (42), perf baseline |
 | Deployment | Dockerfile, docker-compose (app + nginx + postgres + redis + updater sidecar), Nginx TLS, systemd unit |
 
 ## Quick Start
@@ -150,7 +150,7 @@ docker compose up -d --build
 
 | Category | Result |
 | --- | --- |
-| Vitest | **243 passed / 21 skipped** (24 files passed, 2 skipped) |
+| Vitest | **266 passed / 6 skipped** (27 files, 1 skipped) |
 | HTTP smoke | **323/323** (28 + 55 + 73 + 93 + 74) |
 | Playwright | **11 passed / 1 skipped** |
 | Security audit | **42/42**, with one `unsafe-inline` CSP warning |

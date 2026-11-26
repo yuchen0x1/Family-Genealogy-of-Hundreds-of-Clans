@@ -16,10 +16,6 @@
 - 所有 API 响应增加安全的 `X-Request-ID` 请求关联头；服务端日志与未预期错误响应可通过该 ID 关联排查。
 - 搜索分类和条数参数在 API 边界校验，非法值返回结构化错误，不再静默回退或进入无效查询。
 - 管理后台举报列表校验 `status` 筛选值，避免任意字符串进入 Prisma 查询。
-- Merge pull request #16 from yuchen0x1/feat/api-observability-hardening
-- feat: add API request correlation and query validation
-- Merge pull request #13 from yuchen0x1/docs/v0.4.1-release-status
-- docs: record verified v0.4.1 publication
 
 ## [0.4.1] - 2026-11-20
 

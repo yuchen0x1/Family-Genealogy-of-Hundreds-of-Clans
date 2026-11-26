@@ -43,11 +43,11 @@ English README: [README_EN.md](README_EN.md)
 
 ## 最新更新
 
-**v0.4.1 · 2026-11-20** · 修复已保存英文偏好时的导航水合不一致，并更新 Effect 依赖以修复高危 ReDoS。桌面 / 主屏幕安装、离线重连和刷新选择继承自 v0.4.0。
+**v0.4.2 · 2026-11-23** · 维护性补丁：所有 API 响应新增 `X-Request-ID` 请求关联头，搜索分类/条数与管理后台举报状态筛选在边界校验。桌面 / 主屏幕安装、离线重连和刷新选择继承自 v0.4.0，导航语言修复继承自 v0.4.1。
 
-`v0.4.1` 已通过完整发布校验，提供源码包、SHA-256 摘要、更新元数据和依赖清单，GitHub Release 证明已验证。`v0.4.0` 保留为没有附件的不可变历史发布。
+`v0.4.2` 已通过完整发布校验，提供源码包、SHA-256 摘要、更新元数据和依赖清单，GitHub Release 证明已验证。`v0.4.0` 保留为没有附件的不可变历史发布。
 
-[下载 v0.4.1](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.4.1) · [源码部署指南](docs/DEPLOYMENT.md)
+[下载 v0.4.2](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.4.2) · [源码部署指南](docs/DEPLOYMENT.md)
 
 [完整更新日志](docs/releases/release-notes.md)
 
@@ -152,7 +152,7 @@ English README: [README_EN.md](README_EN.md)
 
 - 老谱扫描、照片、PDF、音视频与文本资料统一归档
 - 上传校验：扩展名 + MIME + 实际文件头三重检查，计算 SHA-256 校验和并生成版本记录
-- 文件写入**非公开存储目录**（本地 `.storage/uploads` 或 S3 兼容对象存储），绝不落 `public/`；下载逐次鉴权
+- 文件写入**非公开存储目录**（本地 `.storage/uploads`），绝不落 `public/`；下载逐次鉴权。S3 兼容驱动为预留接口，当前版本仅支持 `local`
 - OCR 为外部依赖，未配置时明确报错，**不会**自动把 OCR 文本转成亲属关系
 
 ### 🔄 导入导出与版本快照
@@ -224,7 +224,7 @@ flowchart LR
     subgraph data["数据层"]
         PG[("PostgreSQL 17<br/>48 表 · pg_trgm + 2-gram + 拼音键")]
         RD[("Redis<br/>缓存 + 限流<br/>未连接自动降级进程内")]
-        FS[("非公开文件存储<br/>本地 / S3 兼容")]
+        FS[("非公开文件存储<br/>本地目录（S3 预留）")]
     end
     OPS["备份脚本 · 更新 sidecar<br/>Nginx TLS 终止"]
 
@@ -243,12 +243,12 @@ flowchart LR
 
 | 层 | 选型（版本来自 `package.json` 与实测构建） |
 | --- | --- |
-| 前端 | Next.js 16.4.5（App Router / Turbopack）、React 19.3.1、TypeScript 6.0.3、Tailwind CSS v4、SWR、ECharts |
+| 前端 | Next.js 16.4.6（App Router / Turbopack）、React 19.3.1、TypeScript 6.0.3、Tailwind CSS v4、SWR、ECharts |
 | 服务端 | Next.js Route Handlers ×69、Zod、scrypt 密码哈希、AES-256-GCM 字段加密 |
 | 数据库 | PostgreSQL 17、Prisma 6.19（48 model / 6 迁移）、`pg_trgm` + 中文 2-gram + 拼音检索键 |
 | 缓存 | Redis（ioredis，未连接自动降级进程内缓存/限流） |
-| 存储 | 本地非公开目录（默认）/ S3 兼容对象存储（需配置凭据） |
-| 测试 | Vitest（24 文件通过 / 2 跳过，243 passed）、5 套 HTTP 冒烟（323 项）、Playwright E2E（11 passed / 1 skipped）、安全审计 42 项、性能基线 |
+| 存储 | 本地非公开目录（当前唯一实现的驱动；S3 兼容驱动为预留接口） |
+| 测试 | Vitest（27 文件 / 266 passed / 6 skipped）、5 套 HTTP 冒烟（323 项）、Playwright E2E（11 passed / 1 skipped）、安全审计 42 项、性能基线 |
 | 部署 | Dockerfile、docker-compose（app + nginx + postgres + redis + updater sidecar）、Nginx TLS 终止、systemd 单元 |
 
 ## 🚀 快速开始
@@ -341,7 +341,7 @@ docker compose up -d --build
 ```bash
 pnpm typecheck            # TypeScript 严格模式
 pnpm lint                 # ESLint
-pnpm test                 # Vitest 单元测试（24 文件通过 / 2 跳过；243 passed / 21 skipped）
+pnpm test                 # Vitest 单元测试（27 文件 / 266 passed / 6 skipped）
 pnpm test:smoke           # 核心后端 HTTP 冒烟（28）
 pnpm test:smoke:ui        # 族谱前端依赖接口（55）
 pnpm test:smoke:archive   # 档案中心 + 导入导出（73）
@@ -359,7 +359,7 @@ pnpm test:cleanup         # 软删除冒烟/E2E 留下的测试族谱与帖子�
 
 | 类别 | 结果 |
 | --- | --- |
-| Vitest | **243 passed / 21 skipped**（24 个文件通过，2 个文件跳过） |
+| Vitest | **266 passed / 6 skipped**（27 个文件，1 个跳过） |
 | HTTP 冒烟 | **323/323**（28 + 55 + 73 + 93 + 74） |
 | Playwright | **11 passed / 1 skipped**（桌面 + Chromium 移动模拟） |
 | 安全审计 | **42/42**；仅 CSP `unsafe-inline` 遗留告警 |
