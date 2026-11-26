@@ -45,7 +45,7 @@ English README: [README_EN.md](README_EN.md)
 
 **v0.4.4 · 2026-11-27** · 安全与稳定性补丁：修复人物编辑意外重置、旧邀请重新授权、关系详情和历史档案隐私边界，并完善登录状态、更新校验与备份恢复。管理员可在应用内检查更新。
 
-发布流水线在全部门禁通过后公开源码包、SHA-256 摘要、更新元数据和依赖清单，并生成 GitHub 构建来源证明。`v0.4.0` 保留为没有附件的不可变历史发布。
+源码包、SHA-256 摘要、更新元数据和依赖清单四项附件均已发布，摘要与 GitHub 构建来源、Release 证明已验证。`v0.4.0` 保留为没有附件的不可变历史发布。验收范围见 [v0.4.4 验收记录](docs/releases/v0.4.4-validation.md)。
 
 [下载 v0.4.4](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.4.4) · [源码部署指南](docs/DEPLOYMENT.md)
 

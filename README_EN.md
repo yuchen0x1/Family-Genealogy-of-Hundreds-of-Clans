@@ -37,7 +37,7 @@ A full-stack, real-implementation (no mock data) open-source platform combining 
 
 **v0.4.4 · 2026-11-27.** Security and stability patch: fixes unintended person-field resets, revoked invitation grants, relationship and historical document privacy boundaries, login state, update validation, and backup restoration. Administrators can check for updates in the app.
 
-The publication workflow exposes the source bundle, SHA-256 checksum, update metadata, and dependency inventory only after all checks pass, and generates GitHub build provenance. The immutable `v0.4.0` release remains an asset-free historical record. [Download v0.4.4](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.4.4) · [Source deployment](docs/DEPLOYMENT.md) · [Release history](docs/releases/release-notes.md) · [Platform support](docs/PLATFORMS.md)
+All four assets are published: the source bundle, SHA-256 checksum, update metadata, and dependency inventory. Their digests, GitHub build provenance, and release attestation have been verified. See the [v0.4.4 validation record](docs/releases/v0.4.4-validation.md) for the verification scope. The immutable `v0.4.0` release remains an asset-free historical record. [Download v0.4.4](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.4.4) · [Source deployment](docs/DEPLOYMENT.md) · [Release history](docs/releases/release-notes.md) · [Platform support](docs/PLATFORMS.md)
 
 ## Features
 

@@ -64,7 +64,9 @@
 - 备份文件与 `ENCRYPTION_KEY` 的离线保管、密钥轮换方案（当前更换密钥会导致旧密文无法解密，文档中已声明）；
 - 多租户场景下的资源隔离与速率配额（当前为单实例限流分桶）。
 
-**CSP 现状**：为兼容 Next.js 与 ECharts，开发配置保留了 `script-src 'unsafe-inline' 'unsafe-eval'`。生产上线建议改用 nonce/hash 策略并移除 `unsafe-eval`，同时复测图谱与导出功能。该项属于已知加固项，未标记为已完成。
+**CSP 现状**（2026-11-27 核对）：为兼容 Next.js 与 ECharts，开发配置保留了 `script-src 'unsafe-inline' 'unsafe-eval'`；生产配置已移除 `unsafe-eval`，仍保留 `unsafe-inline`。生产 HTTP 审计对此保留 1 条加固告警。后续改用 nonce/hash 策略时需要同步验证静态渲染、缓存、图谱与导出功能，该项未标记为已完成。
+
+**v0.4.4 安全复核**：官方 npm registry 的生产和开发依赖审计无已知漏洞；GitHub 开放 Dependabot 告警总数为 0，Secret Scanning 开放告警列表为空；Code Scanning 没有可用分析记录。真实 CI 生产服务安全检查 42 项通过、0 项失败；完整验收范围见 [v0.4.4 验收记录](releases/v0.4.4-validation.md)。这些结果不替代独立渗透测试或完整容器基线扫描。
 
 ## 5. 外部依赖的明确标注
 

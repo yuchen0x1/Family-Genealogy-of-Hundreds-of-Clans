@@ -27,7 +27,14 @@
 
 ### 📦 下载与安装
 
-[下载 v0.4.4](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.4.4)。发布门禁通过后提供 `xungen-0.4.4.tar.gz`、`.tar.gz.sha256`、`.update.json` 和 `.cdx.json` 四项附件，管理员可在个人中心或管理后台检查更新。
+[下载 v0.4.4](https://github.com/yuchen0x1/Family-Genealogy-of-Hundreds-of-Clans/releases/tag/v0.4.4)。已于北京时间 2026-11-27 00:55:26 正式发布。四项附件的摘要、更新元数据、GitHub 构建来源及 Release 证明均已验证，管理员可在个人中心或管理后台检查更新。
+
+| 文件名 | 大小 | 说明 |
+| --- | --- | --- |
+| `xungen-0.4.4.tar.gz` | 9,106,270 字节 | 自托管源码包 |
+| `xungen-0.4.4.tar.gz.sha256` | 86 字节 | SHA-256 校验清单 |
+| `xungen-0.4.4.update.json` | 482 字节 | 在线更新元数据，`securityFix: true` |
+| `xungen-0.4.4.cdx.json` | 215,910 字节 | CycloneDX 依赖清单 |
 
 ### 🔄 升级与数据迁移
 
