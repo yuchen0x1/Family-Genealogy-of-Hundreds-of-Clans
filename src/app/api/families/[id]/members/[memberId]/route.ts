@@ -25,7 +25,17 @@ export const GET = route<Ctx>(async (_req, ctx) => {
         where: { deletedAt: null },
         include: { fromPerson: { select: { id: true, surnameText: true, givenName: true } } },
       },
-      documentLinks: { include: { document: { select: { id: true, title: true, category: true } } } },
+      documentLinks: {
+        // 非协作者只能看到「公开且已审核」且未删除的档案标题，与文档接口的可见性口径一致；
+        // 协作者可看到全部未删除档案。
+        where: {
+          document: {
+            deletedAt: null,
+            ...(access.level ? {} : { visibility: "PUBLIC", reviewStatus: "APPROVED" }),
+          },
+        },
+        include: { document: { select: { id: true, title: true, category: true } } },
+      },
     },
   });
   if (!member) throw new ApiError(404, "人物不存在", "NOT_FOUND");

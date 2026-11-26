@@ -105,7 +105,12 @@ export async function visibleFamilyIds(userId?: string): Promise<string[]> {
   if (!userId) return [];
   const [owned, collaborated] = await Promise.all([
     prisma.family.findMany({ where: { ownerId: userId, deletedAt: null }, select: { id: true } }),
-    prisma.familyCollaborator.findMany({ where: { userId, status: "ACTIVE" }, select: { familyId: true } }),
+    // 族谱被软删除后协作关系仍然存在，必须按 family.deletedAt 过滤，
+    // 否则已删除家族的「家族可见」帖子与人物仍会通过搜索/社区可见。
+    prisma.familyCollaborator.findMany({
+      where: { userId, status: "ACTIVE", family: { deletedAt: null } },
+      select: { familyId: true },
+    }),
   ]);
   return Array.from(new Set([...owned.map((f) => f.id), ...collaborated.map((c) => c.familyId)]));
 }

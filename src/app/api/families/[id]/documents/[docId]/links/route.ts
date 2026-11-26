@@ -70,6 +70,8 @@ export const DELETE = route<Ctx>(async (req: NextRequest, ctx) => {
   const { id, docId } = await ctx.params;
   const user = await getCurrentUser();
   await assertFamilyWrite(user, id);
+  // 先确认 docId 属于 URL 中的家族：否则 A 家族编辑者可用 B 家族的文档 ID 删除其关联。
+  await loadDoc(id, docId);
   const linkId = req.nextUrl.searchParams.get("linkId");
   if (!linkId) throw new ApiError(400, "缺少 linkId", "MISSING_LINK_ID");
   const link = await prisma.documentPersonLink.findFirst({ where: { id: linkId, documentId: docId } });

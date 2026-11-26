@@ -229,12 +229,17 @@ export async function searchAll(
         { alias: insensitive(query) },
       ],
     };
-    if (myFamilyIds.length === 0) {
-      // 匿名/无私有家族权限：公开族谱中只显示已主动公开或已故人物
-      where.AND = [
-        { OR: [{ visibility: "PUBLIC" }, { isLiving: false }] },
-      ];
-    }
+    // 人物可见性必须逐家族判断：只有自己有权限的家族可看到全部人物；
+    // 对公开族谱的其他人，最多只能看到主动公开的人物或「家族可见」的已故人物。
+    // 旧实现仅在 myFamilyIds 为空时过滤，导致任何登录用户只要自建一个家族，
+    // 就能在全站搜索里看到所有公开族谱的在世受限人物（越权读取）。
+    where.AND = [{
+      OR: [
+        { visibility: "PUBLIC" },
+        { isLiving: false, visibility: "FAMILY" },
+        ...(myFamilyIds.length ? [{ familyId: { in: myFamilyIds } }] : []),
+      ],
+    }];
     const [rows, total] = await Promise.all([
       prisma.familyMember.findMany({ where, take: limit, select: { id: true, familyId: true, surnameText: true, givenName: true, isLiving: true, visibility: true, generationNumber: true } }),
       prisma.familyMember.count({ where }),

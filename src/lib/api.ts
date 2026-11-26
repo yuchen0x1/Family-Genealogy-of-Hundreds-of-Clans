@@ -117,10 +117,13 @@ export async function parseBody<S extends ZodTypeAny>(schema: S, req: Request): 
 
 export function getQuery(req: NextRequest) {
   const p = req.nextUrl.searchParams;
+  // 取整后再夹取：?page=1.5 会生成小数 skip/take，Prisma 直接抛错并返回 500。
+  const page = Math.floor(Number(p.get("page")) || 1);
+  const pageSize = Math.floor(Number(p.get("pageSize")) || 20);
   return {
     q: (p.get("q") || "").trim(),
-    page: Math.max(1, Math.min(1000, Number(p.get("page")) || 1)),
-    pageSize: Math.max(1, Math.min(100, Number(p.get("pageSize")) || 20)),
+    page: Math.max(1, Math.min(1000, page)),
+    pageSize: Math.max(1, Math.min(100, pageSize)),
     params: p,
   };
 }

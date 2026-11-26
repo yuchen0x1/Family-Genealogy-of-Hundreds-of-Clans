@@ -50,7 +50,14 @@ export const GET = route<Ctx>(async (_req, ctx) => {
   ]);
   return ok({
     ...documentView(doc as DocumentRow, hasAccess),
-    versions: versions.map((v) => ({ ...v, sizeBytes: Number(v.sizeBytes) })),
+    versions: versions.map((v) => ({
+      id: v.id,
+      versionNumber: v.versionNumber,
+      sizeBytes: Number(v.sizeBytes),
+      createdAt: v.createdAt,
+      // 校验和、变更说明与上传者 ID 属于内部元数据，公开档案不返回
+      ...(hasAccess ? { checksum: v.checksum, changeNote: v.changeNote, createdById: v.createdById } : {}),
+    })),
     personLinks: hasAccess ? links.map((l) => ({
       id: l.id, personId: l.personId, name: `${l.person.surnameText}${l.person.givenName}`,
       linkType: l.linkType, verification: l.verification, createdAt: l.createdAt,

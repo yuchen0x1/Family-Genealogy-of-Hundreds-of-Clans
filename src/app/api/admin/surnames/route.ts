@@ -50,7 +50,9 @@ export const PATCH = route(async (req: NextRequest) => {
       ...(data.credibility ? { credibility: data.credibility as never } : {}),
     },
   });
-  await cacheInvalidate("surnames:list:");
+  // 同时失效列表与详情缓存（surnames:list:* 与 surnames:detail:*），
+  // 否则审核结果在详情接口还会继续返回最长 120 秒的旧值。
+  await cacheInvalidate("surnames:");
   await audit(req, reviewer.id, "admin.surname.review", "surname", data.id, {
     before: { reviewStatus: surname.reviewStatus, credibility: surname.credibility },
     after: { reviewStatus: updated.reviewStatus, credibility: updated.credibility },

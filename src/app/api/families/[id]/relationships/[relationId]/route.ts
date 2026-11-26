@@ -22,17 +22,25 @@ const patchSchema = z.object({
 export const GET = route<Ctx>(async (_req, ctx) => {
   const { id, relationId } = await ctx.params;
   const user = await getCurrentUser();
-  await assertFamilyRead(user, id);
+  const access = await assertFamilyRead(user, id);
   const relation = await prisma.familyRelationship.findFirst({
     where: { id: relationId, familyId: id, deletedAt: null },
     include: {
       fromPerson: { select: { id: true, surnameText: true, givenName: true } },
       toPerson: { select: { id: true, surnameText: true, givenName: true } },
-      document: { select: { id: true, title: true } },
+      document: { select: { id: true, title: true, visibility: true, reviewStatus: true, deletedAt: true } },
     },
   });
   if (!relation) throw new ApiError(404, "关系不存在", "NOT_FOUND");
-  return ok(relation);
+  const document = relation.document;
+  const documentVisible = Boolean(document)
+    && !document!.deletedAt
+    && (access.level || (document!.visibility === "PUBLIC" && document!.reviewStatus === "APPROVED"));
+  return ok({
+    ...relation,
+    // 关联档案的标题同样按文档可见性收敛，避免公开族谱泄露私有/未审核档案标题
+    document: documentVisible ? { id: document!.id, title: document!.title } : null,
+  });
 });
 
 export const PATCH = route<Ctx>(async (req: NextRequest, ctx) => {
@@ -43,6 +51,13 @@ export const PATCH = route<Ctx>(async (req: NextRequest, ctx) => {
   const data = await parseBody(patchSchema, req);
   const existing = await prisma.familyRelationship.findFirst({ where: { id: relationId, familyId: id, deletedAt: null } });
   if (!existing) throw new ApiError(404, "关系不存在", "NOT_FOUND");
+  if (data.documentId) {
+    const doc = await prisma.familyDocument.findFirst({
+      where: { id: data.documentId, familyId: id, deletedAt: null },
+      select: { id: true },
+    });
+    if (!doc) throw new ApiError(400, "关联档案不属于该家族或已删除", "INVALID_DOCUMENT");
+  }
 
   // 修改核实状态时重新跑一次冲突检测，避免把有环关系标记为已核实
   if (data.verification === "VERIFIED") {

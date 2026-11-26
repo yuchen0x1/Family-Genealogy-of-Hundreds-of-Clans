@@ -9,7 +9,9 @@ import { audit } from "@/lib/audit";
 type Ctx = { id: string; userId: string };
 
 const patchSchema = z.object({
-  permission: z.enum(["OWNER", "ADMIN", "EDITOR", "VIEWER"]).optional(),
+  // 不允许通过协作者接口授予 OWNER：否则 ADMIN 可把自己（或同伙）提升为所有者，
+  // 进而获得删除族谱、恢复历史版本等仅限所有者的权限。所有权只能由现有所有者线下转移。
+  permission: z.enum(["ADMIN", "EDITOR", "VIEWER"]).optional(),
   status: z.enum(["ACTIVE", "REVOKED", "DECLINED"]).optional(),
 });
 

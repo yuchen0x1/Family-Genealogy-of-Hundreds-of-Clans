@@ -10,18 +10,28 @@ import { audit } from "@/lib/audit";
 
 type Ctx = { id: string };
 
+async function assertDocumentInFamily(familyId: string, documentId: string) {
+  const doc = await prisma.familyDocument.findFirst({
+    where: { id: documentId, familyId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!doc) throw new ApiError(400, "关联档案不属于该家族或已删除", "INVALID_DOCUMENT");
+}
+
 export const GET = route<Ctx>(async (req: NextRequest, ctx) => {
   const { id } = await ctx.params;
   const user = await getCurrentUser();
-  await assertFamilyRead(user, id);
+  const access = await assertFamilyRead(user, id);
   const { page, pageSize, params } = getQuery(req);
-  const type = params.get("type");
+  const rawType = params.get("type");
+  const type = rawType ? z.enum(["PARENT_CHILD", "SPOUSE", "SIBLING", "ADOPTION", "SUCCESSION", "GUARDIANSHIP", "CROSS_FAMILY_LINK"]).safeParse(rawType) : null;
+  if (rawType && !type?.success) throw new ApiError(422, "关系类型筛选值无效", "VALIDATION_ERROR");
   const relationId = params.get("relationId") ? z.string().uuid().parse(params.get("relationId")) : null;
   const where = {
     familyId: id,
     deletedAt: null,
     ...(relationId ? { id: relationId } : {}),
-    ...(type ? { type: type as never } : {}),
+    ...(type?.success ? { type: type.data } : {}),
   };
   const [rows, total] = await Promise.all([
     prisma.familyRelationship.findMany({
@@ -36,7 +46,17 @@ export const GET = route<Ctx>(async (req: NextRequest, ctx) => {
     }),
     prisma.familyRelationship.count({ where }),
   ]);
-  return ok(paginate(rows, total, page, pageSize));
+  // 非协作者（公开族谱的匿名/普通访客）只看到关系结构与核实状态，
+  // 依据说明 notes、内部来源/档案 ID 与创建者 ID 仅对协作者开放。
+  const items = access.level ? rows : rows.map((row) => {
+    const copy = { ...row } as Record<string, unknown>;
+    delete copy.notes;
+    delete copy.sourceId;
+    delete copy.documentId;
+    delete copy.createdById;
+    return copy;
+  });
+  return ok(paginate(items, total, page, pageSize));
 });
 
 /** POST：建立关系。校验失败返回 409 + 明细；警告随结果返回供用户确认。 */
@@ -58,6 +78,7 @@ export const POST = route<Ctx>(async (req: NextRequest, ctx) => {
   if (report.errors.length) {
     throw new ApiError(409, "关系校验未通过", "RELATIONSHIP_CONFLICT", report);
   }
+  if (data.documentId) await assertDocumentInFamily(id, data.documentId);
 
   const relation = await prisma.familyRelationship.create({
     data: {
