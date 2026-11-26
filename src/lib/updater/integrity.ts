@@ -6,7 +6,7 @@ import { readFile } from "node:fs/promises";
 export function normalizeSha256(value: string | null | undefined): string | null {
   const raw = String(value ?? "").trim();
   if (!raw) return null;
-  const digest = raw.match(/(?:sha256:)?([a-f0-9]{64})/i)?.[1];
+  const digest = raw.match(/^(?:sha256:)?([a-f0-9]{64})$/i)?.[1];
   return digest ? digest.toLowerCase() : null;
 }
 
@@ -15,13 +15,14 @@ export function parseSha256Manifest(text: string, assetName?: string): string | 
   const lines = String(text ?? "").split(/\r?\n/);
   const candidates = lines
     .map((line) => {
-      const match = line.match(/^\s*([a-f0-9]{64})\s+(?:\*?(.+?))?\s*$/i);
+      const match = line.match(/^\s*([a-f0-9]{64})(?:\s+\*?(.+?))?\s*$/i);
       return match ? { digest: match[1].toLowerCase(), name: match[2]?.trim() || null } : null;
     })
     .filter((entry): entry is { digest: string; name: string | null } => Boolean(entry));
   if (assetName) {
     const exact = candidates.find((entry) => entry.name === assetName || entry.name?.endsWith(`/${assetName}`));
     if (exact) return exact.digest;
+    return candidates.length === 1 && candidates[0].name === null ? candidates[0].digest : null;
   }
   return candidates.length === 1 ? candidates[0].digest : null;
 }

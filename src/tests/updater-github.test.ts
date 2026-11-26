@@ -84,12 +84,14 @@ describe("GitHub 上游版本检测", () => {
     });
   });
 
-  it("latest release 为 404 时回退到第一个 tag", async () => {
+  it("latest release 为 404 时回退到最高的有效稳定版本 tag", async () => {
     vi.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(jsonResponse({ message: "Not Found" }, 404))
       .mockResolvedValueOnce(jsonResponse([
-        { name: "v2.0.0", commit: { sha: "abcdef1234567890abcdef1234567890abcdef12" } },
+        { name: "v3.0.0-rc.1" },
+        { name: "not-a-version" },
         { name: "v1.9.0", commit: { sha: "old" } },
+        { name: "v2.0.0", commit: { sha: "abcdef1234567890abcdef1234567890abcdef12" } },
       ]))
       .mockResolvedValueOnce(jsonResponse({ sha: "abcdef1234567890abcdef1234567890abcdef12" }));
 
@@ -101,6 +103,14 @@ describe("GitHub 上游版本检测", () => {
       source: "tag",
     });
     expect(result.url).toContain("/releases/tag/v2.0.0");
+  });
+
+  it("只有预发布或无效 tag 时 stable 通道不安装它们", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(jsonResponse({}, 404))
+      .mockResolvedValueOnce(jsonResponse([{ name: "v2.0.0-beta.1" }, { name: "snapshot" }]));
+    await expect(fetchUpstream({ repo: "example/repo", channel: "stable", branch: "main", force: true }))
+      .rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   it("stable release 无法解析到完整 commit SHA 时拒绝更新目标", async () => {

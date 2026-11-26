@@ -94,6 +94,7 @@ function toPayload(f: FormState) {
     branchId: f.branchId || null,
     visibility: f.visibility,
     sensitiveData: f.sensitiveData.trim() || null,
+    verification: f.verification,
   };
 }
 
@@ -273,7 +274,7 @@ export function PersonPanel({ familyId, familySurname, canWrite, onChanged }: {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Field label="性别"><Select value={editing.form.gender} onChange={(e) => setEditing({ ...editing, form: { ...editing.form, gender: e.target.value } })}><option value="UNKNOWN">未知</option><option value="MALE">男</option><option value="FEMALE">女</option></Select></Field>
               <Field label="在世状态"><Select value={editing.form.isLiving ? "yes" : "no"} onChange={(e) => setEditing({ ...editing, form: { ...editing.form, isLiving: e.target.value === "yes" } })}><option value="yes">在世</option><option value="no">已故</option></Select></Field>
-              <Field label="资料核实状态"><Select value={editing.form.verification} onChange={(e) => setEditing({ ...editing, form: { ...editing.form, verification: e.target.value } })}>{Object.entries(VERIFICATION_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select></Field>
+              <Field label="资料核实状态"><Select aria-label="资料核实状态" value={editing.form.verification} onChange={(e) => setEditing({ ...editing, form: { ...editing.form, verification: e.target.value } })}>{Object.entries(VERIFICATION_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select></Field>
               <Field label="可见范围" hint={editing.form.isLiving && editing.form.visibility === "PUBLIC" ? "在世人物设为公开时，系统会自动降级为家族可见。" : undefined}>
                 <Select value={editing.form.visibility} onChange={(e) => setEditing({ ...editing, form: { ...editing.form, visibility: e.target.value } })}>{Object.entries(VISIBILITY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select>
               </Field>

@@ -5,7 +5,7 @@ import { ok, route, parseBody, getQuery, paginate, assertSameOrigin, ApiError } 
 import { relationshipCreateSchema } from "@/lib/validation";
 import { getCurrentUser } from "@/lib/auth";
 import { assertFamilyRead, assertFamilyWrite } from "@/lib/permissions";
-import { validateRelationship, createVersionSnapshot } from "@/lib/genealogy";
+import { validateRelationship, createVersionSnapshot, publicRelationshipView } from "@/lib/genealogy";
 import { audit } from "@/lib/audit";
 
 type Ctx = { id: string };
@@ -48,14 +48,7 @@ export const GET = route<Ctx>(async (req: NextRequest, ctx) => {
   ]);
   // 非协作者（公开族谱的匿名/普通访客）只看到关系结构与核实状态，
   // 依据说明 notes、内部来源/档案 ID 与创建者 ID 仅对协作者开放。
-  const items = access.level ? rows : rows.map((row) => {
-    const copy = { ...row } as Record<string, unknown>;
-    delete copy.notes;
-    delete copy.sourceId;
-    delete copy.documentId;
-    delete copy.createdById;
-    return copy;
-  });
+  const items = rows.map((row) => publicRelationshipView(row, Boolean(access.level)));
   return ok(paginate(items, total, page, pageSize));
 });
 

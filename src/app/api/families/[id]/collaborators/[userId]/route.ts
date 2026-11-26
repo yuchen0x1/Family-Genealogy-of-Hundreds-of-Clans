@@ -21,12 +21,23 @@ export const PATCH = route<Ctx>(async (req: NextRequest, ctx) => {
   const user = await getCurrentUser();
   await assertFamilyWrite(user, id, "ADMIN");
   const data = await parseBody(patchSchema, req);
-  const target = await prisma.familyCollaborator.findFirst({ where: { familyId: id, userId } });
+  const target = await prisma.familyCollaborator.findFirst({
+    where: { familyId: id, userId }, include: { user: { select: { email: true } } },
+  });
   if (!target) throw new ApiError(404, "协作者不存在", "NOT_FOUND");
   if (target.permission === "OWNER" && user!.id !== userId) {
     throw new ApiError(403, "不能修改所有者的权限", "OWNER_PROTECTED");
   }
-  const updated = await prisma.familyCollaborator.update({ where: { id: target.id }, data });
+  const updated = await prisma.$transaction(async (tx) => {
+    const collaborator = await tx.familyCollaborator.update({ where: { id: target.id }, data });
+    if (data.permission !== undefined || data.status !== undefined) {
+      await tx.familyInvitation.updateMany({
+        where: { familyId: id, email: target.user.email, acceptedAt: null, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+    }
+    return collaborator;
+  });
   await audit(req, user!.id, "collaborator.update", "family_collaborator", target.id, { after: data });
   return ok(updated);
 });
@@ -36,10 +47,18 @@ export const DELETE = route<Ctx>(async (req, ctx) => {
   const { id, userId } = await ctx.params;
   const user = await getCurrentUser();
   await assertFamilyWrite(user, id, "ADMIN");
-  const target = await prisma.familyCollaborator.findFirst({ where: { familyId: id, userId } });
+  const target = await prisma.familyCollaborator.findFirst({
+    where: { familyId: id, userId }, include: { user: { select: { email: true } } },
+  });
   if (!target) throw new ApiError(404, "协作者不存在", "NOT_FOUND");
   if (target.permission === "OWNER") throw new ApiError(403, "不能移除家族所有者", "OWNER_PROTECTED");
-  await prisma.familyCollaborator.update({ where: { id: target.id }, data: { status: "REVOKED" } });
+  await prisma.$transaction(async (tx) => {
+    await tx.familyCollaborator.update({ where: { id: target.id }, data: { status: "REVOKED" } });
+    await tx.familyInvitation.updateMany({
+      where: { familyId: id, email: target.user.email, acceptedAt: null, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  });
   await audit(req, user!.id, "collaborator.revoke", "family_collaborator", target.id);
   return ok({ revoked: true });
 });

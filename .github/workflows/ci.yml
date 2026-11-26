@@ -31,7 +31,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm test:backup
-      - run: pnpm audit --registry=https://registry.npmjs.org --prod --audit-level high
+      - run: pnpm audit --registry=https://registry.npmjs.org --audit-level moderate
 
   dependency-review:
     name: Dependency Review
@@ -84,6 +84,7 @@ jobs:
       - run: pnpm exec prisma generate
       - run: pnpm db:migrate
       - run: pnpm db:seed
+      - run: pnpm test:backup
       - run: pnpm exec vitest run src/tests/genealogy-integration.test.ts
       - run: pnpm build
       - name: Start production server

@@ -70,7 +70,7 @@ export function InvitationAccept({ token }: { token: string }) {
             <Notice data={{ kind: "warning", title: "需要先登录才能接受邀请", lines: ["请使用与受邀邮箱一致的账号登录；系统会在接受时校验邮箱，防止邀请链接被他人冒用。"] }} />
             <div className="flex flex-wrap gap-2">
               <Link href={`/login?next=${encodeURIComponent(`/invitations/${token}`)}`}><Button size="sm">前往登录</Button></Link>
-              <Link href="/register"><Button size="sm" variant="outline">注册账号</Button></Link>
+              <Link href={`/register?next=${encodeURIComponent(`/invitations/${token}`)}`}><Button size="sm" variant="outline">注册账号</Button></Link>
             </div>
           </div>
         ) : emailMismatch ? (

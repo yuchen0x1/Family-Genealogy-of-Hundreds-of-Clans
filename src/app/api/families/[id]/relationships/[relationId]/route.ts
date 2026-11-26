@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { ok, route, parseBody, assertSameOrigin, ApiError } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import { assertFamilyWrite, assertFamilyRead } from "@/lib/permissions";
-import { validateRelationship, createVersionSnapshot } from "@/lib/genealogy";
+import { validateRelationship, createVersionSnapshot, publicRelationshipView } from "@/lib/genealogy";
 import { audit } from "@/lib/audit";
 
 type Ctx = { id: string; relationId: string };
@@ -37,7 +37,7 @@ export const GET = route<Ctx>(async (_req, ctx) => {
     && !document!.deletedAt
     && (access.level || (document!.visibility === "PUBLIC" && document!.reviewStatus === "APPROVED"));
   return ok({
-    ...relation,
+    ...publicRelationshipView(relation, Boolean(access.level)),
     // 关联档案的标题同样按文档可见性收敛，避免公开族谱泄露私有/未审核档案标题
     document: documentVisible ? { id: document!.id, title: document!.title } : null,
   });

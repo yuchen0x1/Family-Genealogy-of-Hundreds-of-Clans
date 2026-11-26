@@ -20,7 +20,7 @@ const NAV = [
 export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const { data: me, mutate } = useSWR<MeResponse>("/api/auth/me", fetcher);
+  const { data: me } = useSWR<MeResponse>("/api/auth/me", fetcher);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -97,9 +97,8 @@ export function SiteHeader() {
 
   const logout = async () => {
     await apiRequest("/api/auth/logout", { method: "POST", body: {} });
-    await mutate();
-    setUserOpen(false);
-    router.push("/");
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- Discard identity-scoped client caches.
+    window.location.assign("/");
   };
 
   return (

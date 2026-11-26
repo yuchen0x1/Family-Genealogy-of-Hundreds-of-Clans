@@ -10,7 +10,7 @@
 import { cacheGet, cacheSet } from "@/lib/cache";
 import { githubToken } from "./config";
 import { normalizeSha256 } from "./integrity";
-import { normalizeVersion } from "./version";
+import { compareVersions, isValidVersion, normalizeVersion } from "./version";
 
 export type UpstreamRelease = {
   /** stable 通道为归一化版本号；branch 通道为 commit SHA */
@@ -211,9 +211,13 @@ async function fetchStable(repo: string): Promise<UpstreamRelease> {
 
   // 仓库只用 tag 不用 Release 是完全合法的发布方式，退回 tag 而不是报错
   const tags = await apiGet<GhTag[]>(`/repos/${repo}/tags?per_page=30`);
-  const first = Array.isArray(tags) ? tags.find((t) => t?.name) : undefined;
+  const first = Array.isArray(tags)
+    ? tags
+      .filter((tag): tag is GhTag & { name: string } => typeof tag?.name === "string" && isValidVersion(tag.name) && !normalizeVersion(tag.name).includes("-"))
+      .sort((a, b) => compareVersions(b.name, a.name))[0]
+    : undefined;
   if (!first?.name) {
-    throw new UpstreamError("上游仓库既没有 Release 也没有任何 tag，无法判断版本", "NOT_FOUND");
+    throw new UpstreamError("上游仓库没有正式 Release 或有效的稳定版本 tag，无法判断版本", "NOT_FOUND");
   }
   const commit = await resolveTagCommit(repo, first.name);
   return {

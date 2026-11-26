@@ -6,7 +6,7 @@ import { ok, route, getQuery, paginate, assertSameOrigin, ApiError, assertRateLi
 import { getCurrentUser } from "@/lib/auth";
 import { assertFamilyRead, assertFamilyWrite } from "@/lib/permissions";
 import { validateUpload } from "@/lib/upload";
-import { newStorageKey, putObject } from "@/lib/storage";
+import { newStorageKey, putObject, deleteObject } from "@/lib/storage";
 import { documentView, type DocumentRow } from "@/lib/documents";
 import { audit } from "@/lib/audit";
 
@@ -109,6 +109,9 @@ export const POST = route<Ctx>(async (req: NextRequest, ctx) => {
       });
     }
     return created;
+  }).catch(async (error: unknown) => {
+    await deleteObject(storageKey).catch(() => undefined);
+    throw error;
   });
 
   await audit(req, user!.id, "document.upload", "family_document", doc.id, {

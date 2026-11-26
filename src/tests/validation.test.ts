@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   registerSchema, loginSchema, familyCreateSchema,
-  memberCreateSchema, relationshipCreateSchema, postCreateSchema,
+  memberCreateSchema, memberUpdateSchema, relationshipCreateSchema, postCreateSchema,
   commentCreateSchema, messageCreateSchema,
 } from "@/lib/validation";
 
@@ -55,7 +55,14 @@ describe("memberCreateSchema", () => {
   });
 
   it("memberUpdateSchema 全部可选", () => {
-    expect(memberCreateSchema.partial().safeParse({}).success).toBe(true);
+    expect(memberUpdateSchema.parse({})).toEqual({});
+  });
+
+  it("人物核实状态默认未核实，更新时保留显式状态且不补默认值", () => {
+    expect(memberCreateSchema.parse({ surnameText: "陈", givenName: "测试" }).verification).toBe("UNVERIFIED");
+    expect(memberUpdateSchema.parse({ verification: "VERIFIED" })).toEqual({ verification: "VERIFIED" });
+    expect(memberUpdateSchema.parse({})).not.toHaveProperty("verification");
+    expect(memberUpdateSchema.safeParse({ verification: "INVALID" }).success).toBe(false);
   });
 });
 

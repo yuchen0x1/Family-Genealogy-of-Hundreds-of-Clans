@@ -56,6 +56,11 @@ export const POST = route<Ctx>(async (req: NextRequest, ctx) => {
         create: { familyId: id, userId: target.id, permission: data.permission as FamilyPermissionCode, status: CollaboratorStatus.PENDING, invitedBy: user!.id },
       });
     }
+    // A replacement invitation must not leave an older, more privileged token usable.
+    await tx.familyInvitation.updateMany({
+      where: { familyId: id, email: data.email, acceptedAt: null, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
     await tx.familyInvitation.create({
       data: { familyId: id, email: data.email, tokenHash: hashToken(token), permission: data.permission as FamilyPermissionCode, invitedById: user!.id, expiresAt },
     });
