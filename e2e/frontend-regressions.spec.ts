@@ -24,13 +24,21 @@ test("登录保留站内返回地址、刷新身份，并在登录注册间保�
   await page.goto("/login?next=%2Fguide%23privacy");
   await expect(page.getByRole("main").getByRole("link", { name: "免费注册" })).toHaveAttribute("href", "/register?next=%2Fguide%23privacy");
   await page.getByRole("main").getByRole("link", { name: "免费注册" }).click();
+  await expect(page.getByRole("heading", { name: "创建账号", exact: true })).toBeVisible();
   await expect(page.getByRole("main").getByRole("link", { name: "直接登录" })).toHaveAttribute("href", "/login?next=%2Fguide%23privacy");
   await page.getByRole("main").getByRole("link", { name: "直接登录" }).click();
+  // Both routes contain #email; wait for the new form before filling it.
+  await expect(page.getByRole("heading", { name: "登录中华寻根", exact: true })).toBeVisible();
   await page.locator("#email").fill(user.email);
   await page.locator("#password").fill("Regression_2026");
-  const navigation = page.waitForRequest((request) => request.isNavigationRequest() && new URL(request.url()).pathname === "/guide");
-  await page.getByRole("button", { name: "登录", exact: true }).click();
-  await navigation;
+  await expect(page.locator("#email")).toHaveValue(user.email);
+  await expect(page.locator("#password")).toHaveValue("Regression_2026");
+  const [loginRequest] = await Promise.all([
+    page.waitForRequest((request) => request.method() === "POST" && new URL(request.url()).pathname === "/api/auth/login"),
+    page.waitForRequest((request) => request.isNavigationRequest() && new URL(request.url()).pathname === "/guide"),
+    page.getByRole("button", { name: "登录", exact: true }).click(),
+  ]);
+  expect(loginRequest.postDataJSON()).toEqual({ email: user.email, password: "Regression_2026" });
   await expect(page).toHaveURL(/\/guide#privacy$/);
   await expect(page.locator("header").getByRole("button", { name: /回归用户/ })).toBeVisible();
 });
