@@ -21,7 +21,7 @@ const RULES: Record<string, Rule> = {
   mp4: { mimes: ["video/mp4"], exts: [".mp4"], magic: (b) => b.subarray(4, 8).toString("latin1") === "ftyp" },
   mp3: { mimes: ["audio/mpeg", "audio/mp3"], exts: [".mp3"], magic: (b) => b[0] === 0xff && (b[1] & 0xe0) === 0xe0 || startsWith("ID3")(b) },
   wav: { mimes: ["audio/wav", "audio/x-wav", "audio/wave"], exts: [".wav"], magic: (b) => b.subarray(0, 4).toString("latin1") === "RIFF" && b.subarray(8, 12).toString("latin1") === "WAVE" },
-  text: { mimes: ["text/plain", "text/csv", "application/json", "application/octet-stream", ""], exts: [".txt", ".csv", ".json", ".ged", ".md"], magic: isProbablyText },
+  text: { mimes: ["text/plain", "text/csv", "text/markdown", "text/x-markdown", "application/json", "application/octet-stream", ""], exts: [".txt", ".csv", ".json", ".ged", ".md"], magic: isProbablyText },
 };
 
 function isProbablyText(b: Buffer): boolean {

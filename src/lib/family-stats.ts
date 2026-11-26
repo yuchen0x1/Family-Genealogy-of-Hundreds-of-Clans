@@ -73,6 +73,15 @@ export type FamilyStats = {
   verification: CountBucket[];
   /** 年龄分布（仅在世且有出生年份），按十年一档 */
   livingAges: Array<{ range: string; count: number }>;
+  /**
+   * 统计覆盖范围。超过单次查询上限时，totals 与各分布只代表样本，
+   * 必须显式告知使用者，不能把样本当作全族数据展示。
+   */
+  coverage?: {
+    sampled: number;
+    total: number;
+    truncated: boolean;
+  };
 };
 
 const GENDER_LABELS: Record<string, string> = {
@@ -275,7 +284,7 @@ export async function loadFamilyStats(
   familyId: string,
   options: { canSeeLivingDetails?: boolean } = {},
 ): Promise<FamilyStats> {
-  const [members, branches] = await Promise.all([
+  const [members, branches, totalMembers] = await Promise.all([
     prisma.familyMember.findMany({
       where: { familyId, deletedAt: null },
       select: {
@@ -290,15 +299,24 @@ export async function loadFamilyStats(
         visibility: true,
         createdAt: true,
       },
-      // 上限保护：单家族统计不因超大族谱拖垮服务；超出时用 totals 说明覆盖样本
+      // 上限保护：单家族统计不因超大族谱拖垮服务；超出时用 coverage 明确告知只统计了样本
       take: 50_000,
     }),
     prisma.familyBranch.findMany({
       where: { familyId, deletedAt: null },
       select: { id: true, name: true },
     }),
+    prisma.familyMember.count({ where: { familyId, deletedAt: null } }),
   ]);
 
   const branchNames = new Map(branches.map((b) => [b.id, b.name]));
-  return summarizeMembers(members as StatMemberRow[], branchNames, undefined, options);
+  const summarized = summarizeMembers(members as StatMemberRow[], branchNames, undefined, options);
+  return {
+    ...summarized,
+    coverage: {
+      sampled: members.length,
+      total: totalMembers,
+      truncated: totalMembers > members.length,
+    },
+  };
 }

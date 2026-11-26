@@ -36,8 +36,16 @@ export type ParsedRelation = {
 };
 export type ParsedData = { persons: ParsedPerson[]; relations: ParsedRelation[]; warnings: string[] };
 
+/**
+ * 防止 CSV 公式注入：Excel / WPS 会把 = + - @ 开头的单元格当作公式执行，
+ * 而姓名、传记等字段来自导入内容或协作者录入，不能默认可信。
+ * 统一加单引号前缀；导入时再由 undoCsvFormulaGuard 还原，保证本系统导出的文件可原样回导。
+ */
+const neutralizeFormula = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
+const undoCsvFormulaGuard = (s: string) => (/^'[=+\-@\t\r]/.test(s) ? s.slice(1) : s);
+
 const esc = (v: unknown) => {
-  const s = String(v ?? "");
+  const s = neutralizeFormula(String(v ?? ""));
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
@@ -224,6 +232,21 @@ export function parseGEDCOM(text: string): ParsedData {
     return iso ? Number(iso[1]) : ged ? (ged[2] ? -Math.abs(Number(ged[1])) : Number(ged[1])) : null;
   };
 
+  /**
+   * 取事件（BIRT/DEAT）下的 DATE。
+   * GEDCOM 不保证 DATE 紧跟在事件行后（常见 `1 BIRT` → `2 PLAC ...` → `2 DATE ...`），
+   * 因此按层级扫描该事件的子行，遇到下一个同级或更高级标签即结束。
+   */
+  const eventDate = (rows: Array<{ level: number; tag: string; value: string }>, tag: string): string | null => {
+    const start = rows.findIndex((r) => r.tag === tag && r.level === 1);
+    if (start < 0) return null;
+    for (let i = start + 1; i < rows.length; i += 1) {
+      if (rows[i].level <= rows[start].level) break;
+      if (rows[i].tag === "DATE") return rows[i].value;
+    }
+    return null;
+  };
+
   for (const [id, rows] of indiRecords) {
     const nameRow = rows.find((r) => r.tag === "NAME" && r.level === 1);
     const givn = rows.find((r) => r.tag === "GIVN")?.value;
@@ -242,8 +265,8 @@ export function parseGEDCOM(text: string): ParsedData {
     }
     const birt = rows.find((r) => r.tag === "BIRT");
     const deat = rows.find((r) => r.tag === "DEAT");
-    const birtDate = rows.find((r, i) => r.tag === "DATE" && i > 0 && rows[i - 1].tag === "BIRT")?.value ?? null;
-    const deatDate = rows.find((r, i) => r.tag === "DATE" && i > 0 && rows[i - 1].tag === "DEAT")?.value ?? null;
+    const birtDate = eventDate(rows, "BIRT");
+    const deatDate = eventDate(rows, "DEAT");
     const sex = rows.find((r) => r.tag === "SEX")?.value?.toUpperCase();
     const gen = rows.find((r) => r.tag === "_GEN")?.value;
     const notes = rows.filter((r) => r.tag === "NOTE" && r.level === 1).map((r) => r.value).join(" ");
@@ -346,7 +369,7 @@ export function parseCSV(text: string): ParsedData {
   const idx = (name: string) => head.indexOf(name.toLowerCase());
   const get = (r: string[], name: string) => {
     const i = idx(name);
-    return i >= 0 ? (r[i] ?? "").trim() : "";
+    return i >= 0 ? undoCsvFormulaGuard((r[i] ?? "").trim()) : "";
   };
   const warnings: string[] = [];
   if (idx("surnameText") < 0 && idx("姓氏") < 0) warnings.push("缺少 surnameText/姓氏 列，将使用默认值。");

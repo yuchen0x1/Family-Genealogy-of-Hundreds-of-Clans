@@ -380,24 +380,29 @@ export function analyzeDuplicateCandidates(
  * 只 select 判断所需字段：不读生平、不读加密字段、不返回任何联系方式。
  */
 export async function loadDuplicateCandidates(familyId: string): Promise<DuplicateReport> {
-  const rows = await prisma.familyMember.findMany({
-    where: { familyId, deletedAt: null },
-    select: {
-      id: true,
-      surnameText: true,
-      givenName: true,
-      courtesyName: true,
-      alias: true,
-      birthYear: true,
-      deathYear: true,
-      generationNumber: true,
-      gender: true,
-      isLiving: true,
-      branchId: true,
-    },
-    orderBy: [{ surnameText: "asc" }, { givenName: "asc" }],
-    take: DUPLICATE_SCAN_LIMIT + 1,
-  });
+  const where = { familyId, deletedAt: null };
+  const [rows, totalMembers] = await Promise.all([
+    prisma.familyMember.findMany({
+      where,
+      select: {
+        id: true,
+        surnameText: true,
+        givenName: true,
+        courtesyName: true,
+        alias: true,
+        birthYear: true,
+        deathYear: true,
+        generationNumber: true,
+        gender: true,
+        isLiving: true,
+        branchId: true,
+      },
+      orderBy: [{ surnameText: "asc" }, { givenName: "asc" }],
+      take: DUPLICATE_SCAN_LIMIT + 1,
+    }),
+    // 截断时必须知道全量人数：只按 take+1 的行数推算会把「未扫描」永远报成 0/1。
+    prisma.familyMember.count({ where }),
+  ]);
 
   const scanTruncated = rows.length > DUPLICATE_SCAN_LIMIT;
   const scanned = scanTruncated ? rows.slice(0, DUPLICATE_SCAN_LIMIT) : rows;
@@ -409,7 +414,7 @@ export async function loadDuplicateCandidates(familyId: string): Promise<Duplica
     oversizedGroups: analysis.oversizedGroups,
     // 两种截断都要如实告知：扫描被截断，或配对数达到上限
     truncated: analysis.truncated,
-    notScanned: scanTruncated ? rows.length - DUPLICATE_SCAN_LIMIT : 0,
+    notScanned: Math.max(0, totalMembers - scanned.length),
     scanLimit: DUPLICATE_SCAN_LIMIT,
   };
 }

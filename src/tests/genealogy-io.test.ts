@@ -31,6 +31,15 @@ describe("导出", () => {
     expect(buildCSV(b)).toContain('"生于甲年，""号""逸民"');
   });
 
+  it("CSV 中和公式注入，且导出的文件可原样回导", () => {
+    const biography = '=HYPERLINK("http://evil.example","click")';
+    const b = { ...bundle, members: [{ ...bundle.members[0], biography }] };
+    const csv = buildCSV(b);
+    // Excel/WPS 会把 = 开头的单元格当公式执行，必须在前面加单引号
+    expect(csv).toContain("'=HYPERLINK");
+    expect(parseCSV(csv).persons[0].biography).toBe(biography);
+  });
+
   it("JSON 携带格式声明与隐私提示", () => {
     const json = JSON.parse(buildJSON(bundle));
     expect(json.format).toBe("zhonghua-xungen.genealogy");
@@ -71,6 +80,20 @@ describe("导入解析", () => {
     for (const year of [-100, 0, 1900]) {
       expect(parseGEDCOM(buildGEDCOM({ ...bundle, members: [{ ...bundle.members[0], birthYear: year }] })).persons[0].birthYear).toBe(year);
     }
+  });
+  it("BIRT/DEAT 的 PLAC 位于 DATE 之前时仍能解析日期", () => {
+    const parsed = parseGEDCOM([
+      "0 @I1@ INDI",
+      "1 NAME 陈 /测试/",
+      "1 BIRT",
+      "2 PLAC 河南许昌",
+      "2 DATE 12 JAN 1900",
+      "1 DEAT",
+      "2 PLAC 福建福州",
+      "2 DATE 1980",
+      "0 TRLR",
+    ].join("\n"));
+    expect(parsed.persons[0]).toMatchObject({ birthYear: 1900, birthDateText: "12 JAN 1900", deathYear: 1980 });
   });
   it.each(["5.5.1", "7.0"] as const)("GEDCOM %s 往返不把配偶自动变成父母，保留收养及已故未知卒年", (version) => {
     const input: ExportBundle = { ...bundle, members: bundle.members.map((p) => ({ ...p, deathYear: null, deathDateText: null, isLiving: false })), relationships: [

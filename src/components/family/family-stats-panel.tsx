@@ -107,7 +107,7 @@ export function FamilyStatsPanel({ familyId }: { familyId: string }) {
 
   if (!data) return null;
 
-  const { totals, gender, generations, generationChars, decades, yearRange, branches, verification, livingAges, livingDetailsIncluded } = data;
+  const { totals, gender, generations, generationChars, decades, yearRange, branches, verification, livingAges, livingDetailsIncluded, coverage } = data;
 
   if (totals.members === 0) {
     return <EmptyState title="还没有可统计的人物" description="先在「人物管理」中添加家族成员，统计会自动汇总。" />;
@@ -120,6 +120,11 @@ export function FamilyStatsPanel({ familyId }: { familyId: string }) {
 
   return (
     <div className="space-y-4">
+      {coverage?.truncated && (
+        <div className="rounded-lg border border-[#e5d3ae] bg-[#faf4e6] px-3.5 py-2.5 text-[11px] leading-5 text-[#8a6a35]">
+          本族谱共 {coverage.total} 人，单次统计上限为 {coverage.sampled} 人；以下数字均为样本统计，不代表全族。
+        </div>
+      )}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="家族成员"

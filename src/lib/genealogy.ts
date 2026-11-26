@@ -42,7 +42,9 @@ export async function validateRelationship(
   if (!from || !to) return { errors, warnings };
 
   const existing = await prisma.familyRelationship.findMany({
-    where: { familyId, deletedAt: null, id: excludeId ? { not: excludeId } : undefined },
+    // REJECTED 表示这条关系已被核实为错误，不应再参与重复判断或父母数量计算，
+    // 否则驳回错误关系后无法重新录入正确关系。
+    where: { familyId, deletedAt: null, verification: { not: "REJECTED" }, id: excludeId ? { not: excludeId } : undefined },
     select: {
       id: true, fromPersonId: true, toPersonId: true, type: true, subtype: true, verification: true,
     },
@@ -348,19 +350,34 @@ export async function createVersionSnapshot(familyId: string, label: string, use
     relationships: relationships.map((r) => ({ ...r, createdAt: r.createdAt.toISOString(), updatedAt: r.updatedAt.toISOString(), deletedAt: null })),
     poems, branches, generations,
   };
-  const versionNumber = (last?.versionNumber ?? 0) + 1;
-  const version = await prisma.genealogyVersion.create({
-    data: {
-      familyId,
-      versionNumber,
-      label,
-      changeSummary: changeSummary ?? null,
-      snapshot: snapshot as unknown as Prisma.InputJsonObject,
-      checksum: sha256(JSON.stringify(snapshot)),
-      createdById: userId,
-    },
-  });
-  return version;
+  let versionNumber = (last?.versionNumber ?? 0) + 1;
+  // 并发编辑时两个请求可能读到同一个 last，随后同时插入 N+1。
+  // (familyId, versionNumber) 有唯一约束，冲突方重读最新版本号后重试，
+  // 避免业务写入已经提交、前端却收到 409 的情况。
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await prisma.genealogyVersion.create({
+        data: {
+          familyId,
+          versionNumber,
+          label,
+          changeSummary: changeSummary ?? null,
+          snapshot: snapshot as unknown as Prisma.InputJsonObject,
+          checksum: sha256(JSON.stringify(snapshot)),
+          createdById: userId,
+        },
+      });
+    } catch (err) {
+      const conflict = err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
+      if (!conflict || attempt >= 2) throw err;
+      const latest = await prisma.genealogyVersion.findFirst({
+        where: { familyId },
+        orderBy: { versionNumber: "desc" },
+        select: { versionNumber: true },
+      });
+      versionNumber = (latest?.versionNumber ?? 0) + 1;
+    }
+  }
 }
 
 export async function ensureFamilyExists(familyId: string) {
