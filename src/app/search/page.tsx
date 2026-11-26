@@ -14,7 +14,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
           <h1 className="mt-2 font-serif text-3xl font-semibold text-ink">全站搜索</h1>
           <p className="mt-2 text-sm text-graphite">姓氏资料 · 历史人物 · 古今地名 · 古籍来源 · 家族族谱 · 寻亲信息，结果按权限过滤。</p>
         </div>
-        <SearchResults initialQuery={(q ?? "").slice(0, 200)} />
+        <SearchResults key={(q ?? "").slice(0, 200)} initialQuery={(q ?? "").slice(0, 200)} />
       </div>
     </div>
   );

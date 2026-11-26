@@ -40,7 +40,7 @@ export default async function FamiliesPage({
       </section>
       <div className="mx-auto max-w-7xl px-4 py-12 md:px-6">
         <SectionTitle eyebrow="BROWSE" title="浏览族谱" description="公开族谱由用户主动发布；私有族谱仅对本人与受邀协作者可见。" />
-        <FamilyList initialMine={sp.mine === "1"} />
+        <FamilyList key={sp.mine === "1" ? "mine" : "all"} initialMine={sp.mine === "1"} />
       </div>
     </div>
   );

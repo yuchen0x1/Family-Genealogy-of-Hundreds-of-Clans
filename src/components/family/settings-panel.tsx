@@ -28,7 +28,9 @@ export function SettingsPanel({ family, onChanged }: { family: FamilyDetail; onC
   const [notice, setNotice] = useState<NoticeData | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
-  const canWrite = ["OWNER", "ADMIN", "EDITOR"].includes(family.access.level ?? "");
+  // 族谱设置（名称、可见范围等）在 PATCH /api/families/[id] 中要求 ADMIN；
+  // EDITOR 只能编辑人物与关系，不能修改族谱级设置，因此这里也必须按 ADMIN 收起表单。
+  const canManage = ["OWNER", "ADMIN"].includes(family.access.level ?? "");
   const isOwner = family.access.isOwner;
   const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -79,19 +81,19 @@ export function SettingsPanel({ family, onChanged }: { family: FamilyDetail; onC
           <CardBody>
             <form id="family-settings-form" onSubmit={save} className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="家族名称 *"><Input value={form.name} onChange={(e) => set("name", e.target.value)} disabled={!canWrite} required maxLength={200} /></Field>
-                <Field label="姓氏 *"><Input value={form.surnameText} onChange={(e) => set("surnameText", e.target.value)} disabled={!canWrite} required maxLength={20} /></Field>
-                <Field label="始祖 / 始迁祖"><Input value={form.founderName} onChange={(e) => set("founderName", e.target.value)} disabled={!canWrite} maxLength={100} /></Field>
-                <Field label="堂号"><Input value={form.hallName} onChange={(e) => set("hallName", e.target.value)} disabled={!canWrite} maxLength={100} /></Field>
+                <Field label="家族名称 *"><Input value={form.name} onChange={(e) => set("name", e.target.value)} disabled={!canManage} required maxLength={200} /></Field>
+                <Field label="姓氏 *"><Input value={form.surnameText} onChange={(e) => set("surnameText", e.target.value)} disabled={!canManage} required maxLength={20} /></Field>
+                <Field label="始祖 / 始迁祖"><Input value={form.founderName} onChange={(e) => set("founderName", e.target.value)} disabled={!canManage} maxLength={100} /></Field>
+                <Field label="堂号"><Input value={form.hallName} onChange={(e) => set("hallName", e.target.value)} disabled={!canManage} maxLength={100} /></Field>
               </div>
-              <Field label="祖籍地"><Input value={form.ancestralHome} onChange={(e) => set("ancestralHome", e.target.value)} disabled={!canWrite} maxLength={300} /></Field>
-              <Field label="家族简介"><Textarea rows={3} value={form.description} onChange={(e) => set("description", e.target.value)} disabled={!canWrite} maxLength={10000} /></Field>
+              <Field label="祖籍地"><Input value={form.ancestralHome} onChange={(e) => set("ancestralHome", e.target.value)} disabled={!canManage} maxLength={300} /></Field>
+              <Field label="家族简介"><Textarea rows={3} value={form.description} onChange={(e) => set("description", e.target.value)} disabled={!canManage} maxLength={10000} /></Field>
               <Field label="可见范围" hint={form.visibility !== "PUBLIC" ? "私有 / 家族可见的族谱不会出现在公开列表与全站搜索结果中。" : "公开后族谱名称与主动公开的人物会进入搜索；在世人物仍默认严格保护。"}>
-                <Select value={form.visibility} onChange={(e) => set("visibility", e.target.value)} disabled={!canWrite}>
+                <Select value={form.visibility} onChange={(e) => set("visibility", e.target.value)} disabled={!canManage}>
                   {Object.entries(VISIBILITY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </Select>
               </Field>
-              {canWrite && <Button type="submit" variant="gold" size="sm" loading={busy}><Save className="h-3.5 w-3.5" />保存修改</Button>}
+              {canManage && <Button type="submit" variant="gold" size="sm" loading={busy}><Save className="h-3.5 w-3.5" />保存修改</Button>}
             </form>
           </CardBody>
         </Card>

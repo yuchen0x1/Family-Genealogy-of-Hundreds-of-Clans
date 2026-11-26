@@ -72,7 +72,7 @@ export function Notice({ data, onClose }: { data: NoticeData | null; onClose?: (
             </ul>
           )}
         </div>
-        {onClose && <button onClick={onClose} className="shrink-0 opacity-60 hover:opacity-100" aria-label="关闭提示"><X className="h-3.5 w-3.5" /></button>}
+        {onClose && <button type="button" onClick={onClose} className="shrink-0 opacity-60 hover:opacity-100" aria-label="关闭提示"><X className="h-3.5 w-3.5" /></button>}
       </div>
     </div>
   );

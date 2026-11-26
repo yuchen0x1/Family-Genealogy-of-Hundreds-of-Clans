@@ -24,12 +24,20 @@ const LEVEL_COLORS: Record<string, string> = {
   UNVERIFIED: "#8a8f95",
 };
 
+/** ECharts 的 HTML tooltip 不转义内容，地名来自后台录入，需自行转义。 */
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (ch) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[ch] ?? ch
+  ));
+}
+
 export function MigrationMap() {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<{ dispose: () => void; setOption: (o: unknown, notMerge?: boolean) => void; resize: () => void } | null>(null);
   const [level, setLevel] = useState("");
   const [selected, setSelected] = useState<Migration | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [mapError, setMapError] = useState(false);
 
   const params = new URLSearchParams({ pageSize: "100" });
   if (level) params.set("level", level);
@@ -53,24 +61,35 @@ export function MigrationMap() {
 
   useEffect(() => {
     let cancelled = false;
+    let onResize: (() => void) | null = null;
+    let observer: ResizeObserver | null = null;
     (async () => {
-      const echarts = await import("echarts");
-      if (cancelled || !containerRef.current) return;
-      const geoRes = await fetch("/geo/china.json");
-      const geoJson = await geoRes.json();
-      echarts.registerMap("xungen-china", geoJson as Parameters<typeof echarts.registerMap>[1]);
-      const chart = echarts.init(containerRef.current, undefined, { renderer: "canvas" });
-      chartRef.current = chart as unknown as typeof chartRef.current;
-      setMapReady(true);
+      try {
+        const echarts = await import("echarts");
+        if (cancelled || !containerRef.current) return;
+        const geoRes = await fetch("/geo/china.json");
+        if (!geoRes.ok) throw new Error(`地图数据加载失败（${geoRes.status}）`);
+        const geoJson = await geoRes.json();
+        if (cancelled || !containerRef.current) return;
+        echarts.registerMap("xungen-china", geoJson as Parameters<typeof echarts.registerMap>[1]);
+        const chart = echarts.init(containerRef.current, undefined, { renderer: "canvas" });
+        chartRef.current = chart as unknown as typeof chartRef.current;
+        setMapReady(true);
 
-      const onResize = () => chart.resize();
-      window.addEventListener("resize", onResize);
-      const observer = new ResizeObserver(onResize);
-      observer.observe(containerRef.current);
-      return () => { window.removeEventListener("resize", onResize); observer.disconnect(); };
+        onResize = () => chart.resize();
+        window.addEventListener("resize", onResize);
+        observer = new ResizeObserver(onResize);
+        observer.observe(containerRef.current);
+      } catch (err) {
+        if (cancelled) return;
+        console.error("[migration-map] 地图初始化失败:", err);
+        setMapError(true);
+      }
     })();
     return () => {
       cancelled = true;
+      if (onResize) window.removeEventListener("resize", onResize);
+      observer?.disconnect();
       chartRef.current?.dispose();
       chartRef.current = null;
     };
@@ -88,10 +107,10 @@ export function MigrationMap() {
         formatter: (params: unknown) => {
           const p = params as { seriesType?: string; name?: string; data?: { modernName?: string; name?: string } };
           if (p.seriesType === "effectScatter") {
-            return `<strong>${p.name ?? ""}</strong><br/>${p.data?.modernName ?? "现代地名待补录"}<br/><span style="opacity:.6">坐标为现代治所近似位置</span>`;
+            return `<strong>${escapeHtml(p.name ?? "")}</strong><br/>${escapeHtml(p.data?.modernName ?? "现代地名待补录")}<br/><span style="opacity:.6">坐标为现代治所近似位置</span>`;
           }
-          if (p.seriesType === "lines") return `<strong>${p.data?.name ?? ""}</strong><br/><span style="opacity:.6">点击查看史料来源与可信程度</span>`;
-          return p.name ?? "";
+          if (p.seriesType === "lines") return `<strong>${escapeHtml(p.data?.name ?? "")}</strong><br/><span style="opacity:.6">点击查看史料来源与可信程度</span>`;
+          return escapeHtml(p.name ?? "");
         },
       },
       geo: {
@@ -156,6 +175,11 @@ export function MigrationMap() {
 
       <div className="relative overflow-hidden rounded-xl border border-line bg-[#f0f3ed]">
         <div ref={containerRef} className="h-[420px] w-full md:h-[520px]" role="img" aria-label="中国历史迁徙与地名地图" />
+        {mapError && (
+          <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-xs leading-5 text-graphite">
+            地图底图加载失败，请刷新页面重试；迁徙记录仍可在下方列表中查看。
+          </div>
+        )}
         <div className="pointer-events-none absolute bottom-2 left-2 right-2 rounded-md bg-white/85 px-3 py-2 text-[10px] leading-4 text-graphite backdrop-blur">
           底图：高德 DataV 官方行政区划数据（本地缓存，含台湾省、香港特别行政区、澳门特别行政区及国家轮廓岛屿要素）。
           地点坐标为现代治所近似位置，仅供示意，非考古定点；迁徙路线均需史料来源，系统不自动生成祖先路线。

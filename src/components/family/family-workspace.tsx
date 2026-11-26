@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import useSWR, { useSWRConfig } from "swr";
 import { ArrowLeft, Users, GitBranch, FileText, Lock, Globe, ShieldCheck, BookOpen, Network, ListTree, History, UserCog, Settings2, FolderArchive, ArrowLeftRight, BarChart3, CopyCheck } from "lucide-react";
@@ -47,8 +47,25 @@ function readTabFromHash(): TabKey {
   return candidate && TAB_KEYS.has(candidate) ? (candidate as TabKey) : "graph";
 }
 
+// 标签页以 URL hash 为唯一数据源：用外部 store 订阅，既避免首帧读取 hash
+// 造成 hydration mismatch，也避免在 effect 里同步 setState 触发级联渲染。
+const tabListeners = new Set<() => void>();
+
+function subscribeTab(onChange: () => void) {
+  tabListeners.add(onChange);
+  window.addEventListener("hashchange", onChange);
+  return () => {
+    tabListeners.delete(onChange);
+    window.removeEventListener("hashchange", onChange);
+  };
+}
+
+function emitTabChange() {
+  for (const listener of tabListeners) listener();
+}
+
 export function FamilyWorkspace({ familyId }: { familyId: string }) {
-  const [tab, setTabState] = useState<TabKey>(() => readTabFromHash());
+  const tab = useSyncExternalStore(subscribeTab, readTabFromHash, () => "graph" as TabKey);
   const detailUrl = `/api/families/${familyId}`;
   const { data: family, error, isLoading, mutate } = useSWR<FamilyDetail>(detailUrl, fetcher);
   const { mutate: mutateAll } = useSWRConfig();
@@ -60,19 +77,13 @@ export function FamilyWorkspace({ familyId }: { familyId: string }) {
    * 用 hash 而不是 query，避免为纯客户端状态触发服务端重渲染或需要 Suspense。
    */
   function setTab(next: TabKey) {
-    setTabState(next);
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      url.hash = next === "graph" ? "" : `tab=${next}`;
-      window.history.replaceState(null, "", url.toString());
-    }
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    url.hash = next === "graph" ? "" : `tab=${next}`;
+    // replaceState 不会触发 hashchange，需要主动通知 useSyncExternalStore
+    window.history.replaceState(null, "", url.toString());
+    emitTabChange();
   }
-
-  useEffect(() => {
-    const onHashChange = () => setTabState(readTabFromHash());
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
-  }, []);
 
   /** 任一面板写入后，刷新家族统计与图谱 SWR 缓存，保证各视图一致。 */
   const refresh = () => {
