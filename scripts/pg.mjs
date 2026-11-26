@@ -58,7 +58,10 @@ async function provision() {
   const r = spawnSync("curl", ["-L", "-f", "-s", "-m", "600", "-o", TARBALL, TARBALL_URL], { encoding: "utf8" });
   if (r.status !== 0) throw new Error(`下载失败: ${r.stderr}`);
   console.log("[pg] 解压中…");
-  run("tar", ["-xzf", TARBALL, "-C", path.dirname(TARBALL)]);
+  // 用相对文件名 + cwd 解压：Windows 绝对路径形如 `C:\...`，GNU tar 会把盘符冒号
+  // 当成远程主机（host:path），报 "Cannot connect to C: resolve failed"。
+  const archiveDir = path.dirname(TARBALL);
+  run("tar", ["-xzf", path.basename(TARBALL)], { cwd: archiveDir });
   if (!existsSync(exe("postgres"))) throw new Error("解压后未找到 postgres 可执行文件");
 }
 

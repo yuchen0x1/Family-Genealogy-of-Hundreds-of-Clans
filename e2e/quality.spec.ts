@@ -59,10 +59,10 @@ test("资料体检、定位、权限与导入并发只提交一次", async ({ pa
   await page.getByRole("textbox", { name: "搜索体检问题" }).fill("不存在的姓名");
   await expect(page.getByText("没有匹配的提示")).toBeVisible();
   await page.getByRole("textbox", { name: "搜索体检问题" }).fill("");
-  await mkdir("docs/images/evolution", { recursive: true });
-  await page.screenshot({ path: "docs/images/evolution/quality-desktop.png", fullPage: true });
+  await mkdir("test-results/evolution", { recursive: true });
+  await page.screenshot({ path: "test-results/evolution/quality-desktop.png", fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: "docs/images/evolution/quality-mobile.png", fullPage: true });
+  await page.screenshot({ path: "test-results/evolution/quality-mobile.png", fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.getByRole("link", { name: /核对 陈体检父辈/ }).first().click();
